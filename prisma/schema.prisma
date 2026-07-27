@@ -1,14 +1,225 @@
-// This is your Prisma schema file,
-// learn more about it in the docs: https://pris.ly/d/prisma-schema
-
-// Looking for ways to speed up your queries, or scale easily with your serverless or edge functions?
-// Try Prisma Accelerate: https://pris.ly/cli/accelerate-init
+// This is your Prisma schema file
 
 generator client {
-  provider = "prisma-client"
-  output   = "../generated/prisma"
+  provider = "prisma-client-js"
 }
 
 datasource db {
-  provider = "postgresql"
+  provider = "mysql" 
+}
+
+// ==========================================
+// 1. USERS & AUTH
+// ==========================================
+enum Role {
+  USER
+  ADMIN
+}
+
+model User {
+  id        String   @id @default(uuid())
+  email     String   @unique
+  password  String
+  name      String
+  role      Role     @default(USER)
+  phone     String?
+  bio       String?  @db.Text
+  
+  // Relasi
+  mediaUploaded Media[]
+  structures    Structure[]
+  votes         Vote[]
+  candidates    Candidate[]
+  registrations Registration[]
+  newsWritten   News[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==========================================
+// 2. MEDIA (Penyimpanan File Terpusat)
+// ==========================================
+model Media {
+  id           String   @id @default(uuid())
+  fileName     String
+  url          String
+  mimeType     String
+  size         Int
+  uploaderId   String
+  uploader     User     @relation(fields: [uploaderId], references: [id])
+  
+  newsCovers   News[]
+  eventPosters Event[]
+  achievements Achievement[]
+  eBooks       EBook[]
+  candidatePhotos Candidate[]
+
+  createdAt    DateTime @default(now())
+}
+
+// ==========================================
+// 3. KONTEN (Berita, Event, E-Book, Prestasi)
+// ==========================================
+model News {
+  id        String   @id @default(uuid())
+  title     String
+  slug      String   @unique
+  content   String   @db.Text
+  authorId  String
+  author    User     @relation(fields: [authorId], references: [id])
+  coverId   String?
+  cover     Media?   @relation(fields: [coverId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+model Event {
+  id          String   @id @default(uuid())
+  title       String
+  description String   @db.Text
+  date        DateTime
+  location    String?
+  posterId    String?
+  poster      Media?   @relation(fields: [posterId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+}
+
+model EBook {
+  id          String   @id @default(uuid())
+  title       String
+  description String?  @db.Text
+  fileId      String
+  file        Media    @relation(fields: [fileId], references: [id])
+
+  createdAt   DateTime @default(now())
+}
+
+model Achievement {
+  id          String   @id @default(uuid())
+  title       String
+  year        Int
+  description String?  @db.Text
+  imageId     String?
+  image       Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+
+  createdAt   DateTime @default(now())
+}
+
+// ==========================================
+// 4. STRUKTUR ORGANISASI
+// ==========================================
+model Period {
+  id            String         @id @default(uuid())
+  name          String         
+  isActive      Boolean        @default(false)
+  structures    Structure[]
+  votingPeriods VotingPeriod[]
+}
+
+model Position {
+  id          String      @id @default(uuid())
+  name        String      
+  level       Int         
+  structures  Structure[]
+}
+
+model Structure {
+  id          String   @id @default(uuid())
+  userId      String
+  user        User     @relation(fields: [userId], references: [id])
+  positionId  String
+  position    Position @relation(fields: [positionId], references: [id])
+  periodId    String
+  period      Period   @relation(fields: [periodId], references: [id])
+
+  @@unique([userId, periodId]) 
+}
+
+// ==========================================
+// 5. FORM DINAMIS & PENDAFTARAN
+// ==========================================
+model FormSetting {
+  id            String         @id @default(uuid())
+  title         String
+  isActive      Boolean        @default(false)
+  schema        Json           
+  registrations Registration[]
+
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+}
+
+model Registration {
+  id          String      @id @default(uuid())
+  userId      String
+  user        User        @relation(fields: [userId], references: [id])
+  formId      String
+  form        FormSetting @relation(fields: [formId], references: [id])
+  answers     Json        
+  status      StatusReg   @default(PENDING)
+
+  createdAt   DateTime    @default(now())
+}
+
+enum StatusReg {
+  PENDING
+  ACCEPTED
+  REJECTED
+}
+
+// ==========================================
+// 6. SISTEM VOTING
+// ==========================================
+model VotingPeriod {
+  id          String      @id @default(uuid())
+  title       String
+  isActive    Boolean     @default(false)
+  periodId    String
+  period      Period      @relation(fields: [periodId], references: [id])
+  candidates  Candidate[]
+  votes       Vote[]
+}
+
+model Candidate {
+  id             String       @id @default(uuid())
+  votingPeriodId String
+  votingPeriod   VotingPeriod @relation(fields: [votingPeriodId], references: [id])
+  userId         String
+  user           User         @relation(fields: [userId], references: [id])
+  vision         String       @db.Text
+  mission        String       @db.Text
+  photoId        String?
+  photo          Media?       @relation(fields: [photoId], references: [id])
+  
+  votes          Vote[]
+}
+
+model Vote {
+  id             String       @id @default(uuid())
+  votingPeriodId String
+  votingPeriod   VotingPeriod @relation(fields: [votingPeriodId], references: [id])
+  candidateId    String
+  candidate      Candidate    @relation(fields: [candidateId], references: [id])
+  voterId        String
+  voter          User         @relation(fields: [voterId], references: [id])
+
+  createdAt      DateTime     @default(now())
+
+  @@unique([votingPeriodId, voterId])
+}
+
+// ==========================================
+// 7. URL SHORTENER
+// ==========================================
+model ShortLink {
+  id          String   @id @default(uuid())
+  code        String   @unique 
+  originalUrl String   @db.Text
+  clicks      Int      @default(0)
+
+  createdAt   DateTime @default(now())
 }
