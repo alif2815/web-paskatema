@@ -7,6 +7,8 @@ import { MediaModule } from './media/media.module';
 import { NewsModule } from './news/news.module';
 import { EventModule } from './event/event.module';
 import { EbookModule } from './ebook/ebook.module';
+import { PeriodModule } from './period/period.module';
+import { PositionModule } from './position/position.module';
 import { PrismaModule } from './prisma/prisma.module';
 import { ShortLinkModule } from './short-link/short-link.module';
 import { VotingModule } from './voting/voting.module';
