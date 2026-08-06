@@ -1,26 +1,41 @@
 import { Injectable } from '@nestjs/common';
 import { CreateAchievementDto } from './dto/create-achievement.dto';
 import { UpdateAchievementDto } from './dto/update-achievement.dto';
+import { PrismaService } from '../prisma/prisma.service'; 
 
 @Injectable()
 export class AchievementService {
-  create(createAchievementDto: CreateAchievementDto) {
-    return 'This action adds a new achievement';
+  // Menyuntikkan PrismaService agar bisa dipakai di class ini
+  constructor(private prisma: PrismaService) {}
+
+  async create(createAchievementDto: CreateAchievementDto) {
+    return await this.prisma.achievement.create({
+      data: createAchievementDto,
+    });
   }
 
-  findAll() {
-    return `This action returns all achievement`;
+  async findAll() {
+    return await this.prisma.achievement.findMany({
+      orderBy: { year: 'desc' }, // Mengurutkan dari tahun terbaru
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} achievement`;
+  async findOne(id: string) {
+    return await this.prisma.achievement.findUnique({
+      where: { id },
+    });
   }
 
-  update(id: number, updateAchievementDto: UpdateAchievementDto) {
-    return `This action updates a #${id} achievement`;
+  async update(id: string, updateAchievementDto: UpdateAchievementDto) {
+    return await this.prisma.achievement.update({
+      where: { id },
+      data: updateAchievementDto,
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} achievement`;
+  async remove(id: string) {
+    return await this.prisma.achievement.delete({
+      where: { id },
+    });
   }
 }

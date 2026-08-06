@@ -19,16 +19,16 @@ export class AchievementController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.achievementService.findOne(+id);
+    return this.achievementService.findOne(id); // lek sg kita buat kemaren lak string ya. lek semisal idne di ganti int nanti perlu ganti di sini e juga
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateAchievementDto: UpdateAchievementDto) {
-    return this.achievementService.update(+id, updateAchievementDto);
+    return this.achievementService.update(id, updateAchievementDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.achievementService.remove(+id);
+    return this.achievementService.remove(id);
   }
 }
