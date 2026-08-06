@@ -54,6 +54,7 @@ model Media {
   achievements Achievement[]
   eBooks       EBook[]
   candidatePhotos Candidate[]
+  structures  Structure[]
 
   createdAt    DateTime @default(now())
 }
@@ -135,6 +136,8 @@ model Structure {
   position    Position @relation(fields: [positionId], references: [id])
   periodId    String
   period      Period   @relation(fields: [periodId], references: [id])
+  imageId     String?
+  image       Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
 
   @@unique([userId, periodId]) 
 }
