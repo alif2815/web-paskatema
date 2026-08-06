@@ -1,26 +1,63 @@
 import { Injectable } from '@nestjs/common';
 import { CreateStructureDto } from './dto/create-structure.dto';
 import { UpdateStructureDto } from './dto/update-structure.dto';
+import { PrismaService } from '../prisma/prisma.service'; // Pastikan path import ini sesuai
 
 @Injectable()
 export class StructureService {
-  create(createStructureDto: CreateStructureDto) {
-    return 'This action adds a new structure';
+  constructor(private prisma: PrismaService) {}
+
+  async create(createStructureDto: CreateStructureDto) {
+    return await this.prisma.structure.create({
+      data: createStructureDto,
+      include: {
+        user: true,
+        position: true,
+        period: true,
+        image: true, // Akan memanggil tabel Media jika ada relasinya
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all structure`;
+  async findAll() {
+    return await this.prisma.structure.findMany({
+      include: {
+        user: true,
+        position: true,
+        period: true,
+        image: true,
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} structure`;
+  async findOne(id: string) {
+    return await this.prisma.structure.findUnique({
+      where: { id },
+      include: {
+        user: true,
+        position: true,
+        period: true,
+        image: true,
+      },
+    });
   }
 
-  update(id: number, updateStructureDto: UpdateStructureDto) {
-    return `This action updates a #${id} structure`;
+  async update(id: string, updateStructureDto: UpdateStructureDto) {
+    return await this.prisma.structure.update({
+      where: { id },
+      data: updateStructureDto,
+      include: {
+        user: true,
+        position: true,
+        period: true,
+        image: true,
+      },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} structure`;
+  async remove(id: string) {
+    return await this.prisma.structure.delete({
+      where: { id },
+    });
   }
 }

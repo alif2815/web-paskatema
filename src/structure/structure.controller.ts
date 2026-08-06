@@ -19,16 +19,16 @@ export class StructureController {
 
   @Get(':id')
   findOne(@Param('id') id: string) {
-    return this.structureService.findOne(+id);
+    return this.structureService.findOne(id); 
   }
 
   @Patch(':id')
   update(@Param('id') id: string, @Body() updateStructureDto: UpdateStructureDto) {
-    return this.structureService.update(+id, updateStructureDto);
+    return this.structureService.update(id, updateStructureDto);
   }
 
   @Delete(':id')
   remove(@Param('id') id: string) {
-    return this.structureService.remove(+id);
+    return this.structureService.remove(id);
   }
 }
