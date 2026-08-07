@@ -1,34 +1,73 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Get,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+import {
+  ApiBearerAuth,
+  ApiOperation,
+  ApiTags,
+} from '@nestjs/swagger';
 import { AuthService } from './auth.service';
-import { CreateAuthDto } from './dto/create-auth.dto';
-import { UpdateAuthDto } from './dto/update-auth.dto';
+import { CreateAuthDto } from './dto/register.dto';
+import { LoginAuthDto } from './dto/login.dto';
+import { ChangePasswordDto } from './dto/change-password.dto';
+import { UpdateEmailDto } from './dto/update-email.dto';
+import { JwtAuthGuard } from './guards/jwt-auth.guard';
+import { GetUser } from './decorators/get-user.decorators';
 
+@ApiTags('Auth')
 @Controller('auth')
 export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
-  @Post()
-  create(@Body() createAuthDto: CreateAuthDto) {
-    return this.authService.create(createAuthDto);
+  // POST /auth/register
+  @ApiOperation({ summary: 'Registrasi akun baru' })
+  @Post('register')
+  register(@Body() dto: CreateAuthDto) {
+    return this.authService.register(dto);
   }
 
-  @Get()
-  findAll() {
-    return this.authService.findAll();
+  // POST /auth/login
+  @ApiOperation({ summary: 'Login dan dapatkan JWT token' })
+  @Post('login')
+  login(@Body() dto: LoginAuthDto) {
+    return this.authService.login(dto);
   }
 
-  @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.authService.findOne(+id);
+  // GET /auth/me
+  @ApiOperation({ summary: 'Ambil profil user yang sedang login' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Get('me')
+  getMe(@GetUser('id') userId: string) {
+    return this.authService.getMe(userId);
   }
 
-  @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAuthDto: UpdateAuthDto) {
-    return this.authService.update(+id, updateAuthDto);
+  // PATCH /auth/change-password
+  @ApiOperation({ summary: 'Ganti password user yang sedang login' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('change-password')
+  changePassword(
+    @GetUser('id') userId: string,
+    @Body() dto: ChangePasswordDto,
+  ) {
+    return this.authService.changePassword(userId, dto);
   }
 
-  @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.authService.remove(+id);
+  // PATCH /auth/update-email
+  @ApiOperation({ summary: 'Update email user yang sedang login' })
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  @Patch('update-email')
+  updateEmail(
+    @GetUser('id') userId: string,
+    @Body() dto: UpdateEmailDto,
+  ) {
+    return this.authService.updateEmail(userId, dto);
   }
 }
