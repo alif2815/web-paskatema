@@ -15,7 +15,7 @@ export class PeriodService {
 
   async findAll() {
     return await this.prisma.period.findMany({
-      orderBy: { name: 'desc' } // Mengurutkan dari tahun terbaru
+      orderBy: { name: 'desc' } // Mengurutkan dari tahun terbarunyak
     });
   }
 
