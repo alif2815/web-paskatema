@@ -9,10 +9,11 @@ import {
 } from '@nestjs/common';
 
 import { EventService } from './event.service';
-
+import { ApiTags } from '@nestjs/swagger';
 import { CreateEventDto } from './dto/create-event.dto';
 import { UpdateEventDto } from './dto/update-event.dto';
 
+@ApiTags('Events')
 @Controller('events')
 export class EventController {
   constructor(
