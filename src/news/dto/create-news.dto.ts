@@ -1,6 +1,8 @@
 import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
 import { IsNotEmpty, IsOptional, IsString, IsUUID } from 'class-validator';
+import { ApiTags } from '@nestjs/swagger';
 
+@ApiTags('News')
 export class CreateNewsDto {
   @ApiProperty({
     example: 'PASKATEMA Raih Juara 1 Lomba PBB Tingkat Kota Malang',
