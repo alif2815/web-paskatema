@@ -10,7 +10,9 @@ import { UpdateEventDto } from './dto/update-event.dto';
 
 @Injectable()
 export class EventService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
 
   async create(createEventDto: CreateEventDto) {
     const {
@@ -21,12 +23,14 @@ export class EventService {
       posterId,
     } = createEventDto;
 
+    // Pastikan poster Media benar-benar ada
     if (posterId) {
-      const poster = await this.prisma.media.findUnique({
-        where: {
-          id: posterId,
-        },
-      });
+      const poster =
+        await this.prisma.media.findUnique({
+          where: {
+            id: posterId,
+          },
+        });
 
       if (!poster) {
         throw new NotFoundException(
@@ -58,25 +62,6 @@ export class EventService {
         poster: true,
       },
     });
-  }
-
-  async findOne(id: string) {
-    const event = await this.prisma.event.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        poster: true,
-      },
-    });
-
-    if (!event) {
-      throw new NotFoundException(
-        'Event tidak ditemukan',
-      );
-    }
-
-    return event;
   }
 
   async findUpcoming() {
@@ -111,6 +96,26 @@ export class EventService {
     });
   }
 
+  async findOne(id: string) {
+    const event =
+      await this.prisma.event.findUnique({
+        where: {
+          id,
+        },
+        include: {
+          poster: true,
+        },
+      });
+
+    if (!event) {
+      throw new NotFoundException(
+        'Event tidak ditemukan',
+      );
+    }
+
+    return event;
+  }
+
   async update(
     id: string,
     updateEventDto: UpdateEventDto,
@@ -128,26 +133,56 @@ export class EventService {
       );
     }
 
-    const data: any = {
-      ...updateEventDto,
-    };
+    const {
+      title,
+      description,
+      date,
+      location,
+      posterId,
+    } = updateEventDto;
 
-    if (updateEventDto.date) {
-      data.date = new Date(updateEventDto.date);
-    }
-
-    if (updateEventDto.posterId) {
-      const poster = await this.prisma.media.findUnique({
-        where: {
-          id: updateEventDto.posterId,
-        },
-      });
+    // Cek poster baru jika dikirim
+    if (posterId) {
+      const poster =
+        await this.prisma.media.findUnique({
+          where: {
+            id: posterId,
+          },
+        });
 
       if (!poster) {
         throw new NotFoundException(
           'Media poster tidak ditemukan',
         );
       }
+    }
+
+    const data: {
+      title?: string;
+      description?: string;
+      date?: Date;
+      location?: string;
+      posterId?: string;
+    } = {};
+
+    if (title !== undefined) {
+      data.title = title;
+    }
+
+    if (description !== undefined) {
+      data.description = description;
+    }
+
+    if (date !== undefined) {
+      data.date = new Date(date);
+    }
+
+    if (location !== undefined) {
+      data.location = location;
+    }
+
+    if (posterId !== undefined) {
+      data.posterId = posterId;
     }
 
     return this.prisma.event.update({
