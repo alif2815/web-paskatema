@@ -11,7 +11,9 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 
 @Injectable()
 export class NewsService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+  ) {}
 
   private generateSlug(title: string): string {
     return title
@@ -32,13 +34,17 @@ export class NewsService {
     let counter = 1;
 
     while (true) {
-      const existingNews = await this.prisma.news.findUnique({
-        where: {
-          slug,
-        },
-      });
+      const existingNews =
+        await this.prisma.news.findUnique({
+          where: {
+            slug,
+          },
+        });
 
-      if (!existingNews || existingNews.id === excludeId) {
+      if (
+        !existingNews ||
+        existingNews.id === excludeId
+      ) {
         return slug;
       }
 
@@ -47,9 +53,17 @@ export class NewsService {
     }
   }
 
-  async create(createNewsDto: CreateNewsDto) {
-    const { title, content, authorId, coverId } = createNewsDto;
+  async create(
+    createNewsDto: CreateNewsDto,
+    authorId: string,
+  ) {
+    const {
+      title,
+      content,
+      coverId,
+    } = createNewsDto;
 
+    //  user e harus ada dan pasti ada
     const author = await this.prisma.user.findUnique({
       where: {
         id: authorId,
@@ -57,22 +71,28 @@ export class NewsService {
     });
 
     if (!author) {
-      throw new NotFoundException('Author tidak ditemukan');
+      throw new NotFoundException(
+        'Author tidak ditemukan',
+      );
     }
 
     if (coverId) {
-      const cover = await this.prisma.media.findUnique({
-        where: {
-          id: coverId,
-        },
-      });
+      const cover =
+        await this.prisma.media.findUnique({
+          where: {
+            id: coverId,
+          },
+        });
 
       if (!cover) {
-        throw new NotFoundException('Media cover tidak ditemukan');
+        throw new NotFoundException(
+          'Media cover tidak ditemukan',
+        );
       }
     }
 
-    const slug = await this.generateUniqueSlug(title);
+    const slug =
+      await this.generateUniqueSlug(title);
 
     return this.prisma.news.create({
       data: {
@@ -82,6 +102,7 @@ export class NewsService {
         authorId,
         coverId,
       },
+
       include: {
         author: {
           select: {
@@ -90,6 +111,7 @@ export class NewsService {
             email: true,
           },
         },
+
         cover: true,
       },
     });
@@ -100,6 +122,7 @@ export class NewsService {
       orderBy: {
         createdAt: 'desc',
       },
+
       include: {
         author: {
           select: {
@@ -107,131 +130,171 @@ export class NewsService {
             name: true,
           },
         },
+
         cover: true,
       },
     });
   }
 
   async findOne(id: string) {
-    const news = await this.prisma.news.findUnique({
-      where: {
-        id,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+    const news =
+      await this.prisma.news.findUnique({
+        where: {
+          id,
         },
-        cover: true,
-      },
-    });
+
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+
+          cover: true,
+        },
+      });
 
     if (!news) {
-      throw new NotFoundException('Berita tidak ditemukan');
+      throw new NotFoundException(
+        'Berita tidak ditemukan',
+      );
     }
 
     return news;
   }
 
   async findBySlug(slug: string) {
-    const news = await this.prisma.news.findUnique({
-      where: {
-        slug,
-      },
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-          },
+    const news =
+      await this.prisma.news.findUnique({
+        where: {
+          slug,
         },
-        cover: true,
-      },
-    });
+
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+            },
+          },
+
+          cover: true,
+        },
+      });
 
     if (!news) {
-      throw new NotFoundException('Berita tidak ditemukan');
+      throw new NotFoundException(
+        'Berita tidak ditemukan',
+      );
     }
 
     return news;
   }
 
-  async update(id: string, updateNewsDto: UpdateNewsDto) {
-    const existingNews = await this.prisma.news.findUnique({
-      where: {
-        id,
-      },
-    });
+  async update(
+    id: string,
+    updateNewsDto: UpdateNewsDto,
+  ) {
+    const existingNews =
+      await this.prisma.news.findUnique({
+        where: {
+          id,
+        },
+      });
 
     if (!existingNews) {
-      throw new NotFoundException('Berita tidak ditemukan');
-    }
-
-    const data: any = {
-      ...updateNewsDto,
-    };
-
-    if (updateNewsDto.title) {
-      data.slug = await this.generateUniqueSlug(
-        updateNewsDto.title,
-        id,
+      throw new NotFoundException(
+        'Berita tidak ditemukan',
       );
     }
 
-    if (updateNewsDto.authorId) {
-      const author = await this.prisma.user.findUnique({
-        where: {
-          id: updateNewsDto.authorId,
-        },
-      });
+    const {
+      title,
+      content,
+      coverId,
+    } = updateNewsDto;
 
-      if (!author) {
-        throw new NotFoundException('Author tidak ditemukan');
-      }
-    }
-
-    if (updateNewsDto.coverId) {
-      const cover = await this.prisma.media.findUnique({
-        where: {
-          id: updateNewsDto.coverId,
-        },
-      });
+    if (coverId) {
+      const cover =
+        await this.prisma.media.findUnique({
+          where: {
+            id: coverId,
+          },
+        });
 
       if (!cover) {
-        throw new NotFoundException('Media cover tidak ditemukan');
+        throw new NotFoundException(
+          'Media cover tidak ditemukan',
+        );
       }
     }
 
-    return this.prisma.news.update({
-      where: {
-        id,
-      },
-      data,
-      include: {
-        author: {
-          select: {
-            id: true,
-            name: true,
-            email: true,
-          },
+    const data: {
+      title?: string;
+      content?: string;
+      slug?: string;
+      coverId?: string;
+    } = {};
+
+    if (title !== undefined) {
+      data.title = title;
+
+      data.slug =
+        await this.generateUniqueSlug(
+          title,
+          id,
+        );
+    }
+
+    if (content !== undefined) {
+      data.content = content;
+    }
+
+    if (coverId !== undefined) {
+      data.coverId = coverId;
+    }
+
+    try {
+      return await this.prisma.news.update({
+        where: {
+          id,
         },
-        cover: true,
-      },
-    });
+
+        data,
+
+        include: {
+          author: {
+            select: {
+              id: true,
+              name: true,
+              email: true,
+            },
+          },
+
+          cover: true,
+        },
+      });
+    } catch (error) {
+      throw new ConflictException(
+        'Gagal memperbarui berita',
+      );
+    }
   }
 
   async remove(id: string) {
-    const existingNews = await this.prisma.news.findUnique({
-      where: {
-        id,
-      },
-    });
+    const existingNews =
+      await this.prisma.news.findUnique({
+        where: {
+          id,
+        },
+      });
 
     if (!existingNews) {
-      throw new NotFoundException('Berita tidak ditemukan');
+      throw new NotFoundException(
+        'Berita tidak ditemukan',
+      );
     }
 
     return this.prisma.news.delete({

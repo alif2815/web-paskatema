@@ -6,7 +6,11 @@ import {
   Param,
   Patch,
   Post,
+  UseGuards,
 } from '@nestjs/common';
+
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { GetUser } from '../auth/decorators/get-user.decorators';
 
 import { NewsService } from './news.service';
 
@@ -15,11 +19,20 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 
 @Controller('news')
 export class NewsController {
-  constructor(private readonly newsService: NewsService) {}
+  constructor(
+    private readonly newsService: NewsService,
+  ) {}
 
   @Post()
-  create(@Body() createNewsDto: CreateNewsDto) {
-    return this.newsService.create(createNewsDto);
+  @UseGuards(JwtAuthGuard)
+  create(
+    @Body() createNewsDto: CreateNewsDto,
+    @GetUser('id') userId: string,
+  ) {
+    return this.newsService.create(
+      createNewsDto,
+      userId,
+    );
   }
 
   @Get()
@@ -28,25 +41,36 @@ export class NewsController {
   }
 
   @Get('slug/:slug')
-  findBySlug(@Param('slug') slug: string) {
+  findBySlug(
+    @Param('slug') slug: string,
+  ) {
     return this.newsService.findBySlug(slug);
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
+  findOne(
+    @Param('id') id: string,
+  ) {
     return this.newsService.findOne(id);
   }
 
   @Patch(':id')
+  @UseGuards(JwtAuthGuard)
   update(
     @Param('id') id: string,
     @Body() updateNewsDto: UpdateNewsDto,
   ) {
-    return this.newsService.update(id, updateNewsDto);
+    return this.newsService.update(
+      id,
+      updateNewsDto,
+    );
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  @UseGuards(JwtAuthGuard)
+  remove(
+    @Param('id') id: string,
+  ) {
     return this.newsService.remove(id);
   }
 }
