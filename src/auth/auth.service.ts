@@ -1,28 +1,50 @@
 import {
   BadRequestException,
   ConflictException,
+  ForbiddenException,
   Injectable,
   UnauthorizedException,
 } from '@nestjs/common';
 import { JwtService } from '@nestjs/jwt';
+import { Role } from '@prisma/client';
+import * as bcrypt from 'bcrypt';
+
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAuthDto } from './dto/register.dto';
 import { LoginAuthDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateEmailDto } from './dto/update-email.dto';
-import * as bcrypt from 'bcrypt';
+
+/** Domain email yang wajib digunakan oleh akun ADMIN */
+const ADMIN_EMAIL_DOMAIN = '@paskatema.com';
 
 @Injectable()
 export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
-  ) { }
+  ) {}
 
   // =====================
   // REGISTER
   // =====================
   async register(dto: CreateAuthDto) {
+    // Validasi: akun ADMIN wajib menggunakan email @paskatema.com
+    if (dto.role === Role.ADMIN) {
+      if (!dto.email.endsWith(ADMIN_EMAIL_DOMAIN)) {
+        throw new ForbiddenException(
+          `Akun admin hanya dapat didaftarkan dengan email berformat *${ADMIN_EMAIL_DOMAIN}`,
+        );
+      }
+    }
+
+    // Validasi kebalikan: email @paskatema.com HARUS mendaftar sebagai ADMIN
+    if (dto.email.endsWith(ADMIN_EMAIL_DOMAIN) && dto.role !== Role.ADMIN) {
+      throw new ForbiddenException(
+        `Email dengan domain ${ADMIN_EMAIL_DOMAIN} hanya dapat didaftarkan sebagai ADMIN`,
+      );
+    }
+
     // Cek apakah email sudah digunakan
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },
@@ -156,6 +178,30 @@ export class AuthService {
   // UPDATE EMAIL
   // =====================
   async updateEmail(userId: string, dto: UpdateEmailDto) {
+    // Ambil data user saat ini untuk mengetahui role-nya
+    const currentUser = await this.prisma.user.findUnique({
+      where: { id: userId },
+    });
+
+    if (!currentUser) {
+      throw new UnauthorizedException('User tidak ditemukan');
+    }
+
+    // Validasi domain email berdasarkan role
+    if (currentUser.role === Role.ADMIN) {
+      if (!dto.email.endsWith(ADMIN_EMAIL_DOMAIN)) {
+        throw new ForbiddenException(
+          `Akun admin hanya dapat menggunakan email berformat *${ADMIN_EMAIL_DOMAIN}`,
+        );
+      }
+    } else {
+      if (dto.email.endsWith(ADMIN_EMAIL_DOMAIN)) {
+        throw new ForbiddenException(
+          `Email dengan domain ${ADMIN_EMAIL_DOMAIN} hanya dapat digunakan oleh ADMIN`,
+        );
+      }
+    }
+
     // Cek apakah email baru sudah digunakan user lain
     const existingUser = await this.prisma.user.findUnique({
       where: { email: dto.email },

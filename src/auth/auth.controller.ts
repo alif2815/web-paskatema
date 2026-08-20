@@ -11,6 +11,7 @@ import {
   ApiOperation,
   ApiTags,
 } from '@nestjs/swagger';
+
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/register.dto';
 import { LoginAuthDto } from './dto/login.dto';
@@ -25,7 +26,7 @@ export class AuthController {
   constructor(private readonly authService: AuthService) {}
 
   // POST /auth/register
-  @ApiOperation({ summary: 'Registrasi akun baru' })
+  @ApiOperation({ summary: 'Registrasi akun baru. Admin wajib menggunakan email @paskatema.com' })
   @Post('register')
   register(@Body() dto: CreateAuthDto) {
     return this.authService.register(dto);
@@ -60,7 +61,7 @@ export class AuthController {
   }
 
   // PATCH /auth/update-email
-  @ApiOperation({ summary: 'Update email user yang sedang login' })
+  @ApiOperation({ summary: 'Update email user yang sedang login. Admin wajib menggunakan email @paskatema.com' })
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
   @Patch('update-email')
