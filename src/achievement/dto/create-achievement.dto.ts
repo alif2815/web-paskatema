@@ -1,4 +1,13 @@
-import { IsString, IsInt, IsOptional, IsNotEmpty } from 'class-validator';
+import {
+  IsInt,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+  IsUUID,
+  Min,
+  Max,
+} from 'class-validator';
+
 import { Type } from 'class-transformer';
 
 export class CreateAchievementDto {
@@ -6,16 +15,17 @@ export class CreateAchievementDto {
   @IsNotEmpty()
   title!: string;
 
+  @Type(() => Number)
   @IsInt()
-  @IsNotEmpty()
-  @Type(() => Number) // Memastikan input diubah menjadi angka
+  @Min(1900)
+  @Max(2100)
   year!: number;
 
   @IsString()
   @IsOptional()
   description?: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   imageId?: string;
 }

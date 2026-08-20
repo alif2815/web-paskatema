@@ -1,15 +1,41 @@
-import { Controller, Get, Post, Body, Patch, Param, Delete } from '@nestjs/common';
+import {
+  Body,
+  Controller,
+  Delete,
+  Get,
+  Param,
+  Patch,
+  Post,
+  UseGuards,
+} from '@nestjs/common';
+
+import {
+  ApiBearerAuth,
+  ApiTags,
+} from '@nestjs/swagger';
+
 import { AchievementService } from './achievement.service';
 import { CreateAchievementDto } from './dto/create-achievement.dto';
 import { UpdateAchievementDto } from './dto/update-achievement.dto';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
+@ApiTags('Achievement')
 @Controller('achievement')
 export class AchievementController {
-  constructor(private readonly achievementService: AchievementService) {}
+  constructor(
+    private readonly achievementService: AchievementService,
+  ) {}
 
   @Post()
-  create(@Body() createAchievementDto: CreateAchievementDto) {
-    return this.achievementService.create(createAchievementDto);
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  create(
+    @Body()
+    createAchievementDto: CreateAchievementDto,
+  ) {
+    return this.achievementService.create(
+      createAchievementDto,
+    );
   }
 
   @Get()
@@ -18,17 +44,32 @@ export class AchievementController {
   }
 
   @Get(':id')
-  findOne(@Param('id') id: string) {
-    return this.achievementService.findOne(id); // lek sg kita buat kemaren lak string ya. lek semisal idne di ganti int nanti perlu ganti di sini e juga
+  findOne(
+    @Param('id') id: string,
+  ) {
+    return this.achievementService.findOne(id);
   }
 
   @Patch(':id')
-  update(@Param('id') id: string, @Body() updateAchievementDto: UpdateAchievementDto) {
-    return this.achievementService.update(id, updateAchievementDto);
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  update(
+    @Param('id') id: string,
+    @Body()
+    updateAchievementDto: UpdateAchievementDto,
+  ) {
+    return this.achievementService.update(
+      id,
+      updateAchievementDto,
+    );
   }
 
   @Delete(':id')
-  remove(@Param('id') id: string) {
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard)
+  remove(
+    @Param('id') id: string,
+  ) {
     return this.achievementService.remove(id);
   }
 }
