@@ -1,13 +1,22 @@
 import { Module } from '@nestjs/common';
+import { MulterModule } from '@nestjs/platform-express';
+import { memoryStorage } from 'multer';
+
 import { UserService } from './user.service';
 import { UserController } from './user.controller';
-import { JwtAuthGuard } from 'src/auth/guards/jwt-auth.guard';
-import { RolesGuard } from 'src/auth/guards/roles.guard';
-import { PrismaModule } from 'src/prisma/prisma.module';
+import { PrismaModule } from '../prisma/prisma.module';
 
 @Module({
-  imports: [PrismaModule],
+  imports: [
+    PrismaModule,
+    // Gunakan memoryStorage agar file bisa diproses manual di service
+    // (validasi tipe & ukuran sebelum tulis ke disk)
+    MulterModule.register({
+      storage: memoryStorage(),
+    }),
+  ],
   controllers: [UserController],
-  providers: [UserService, JwtAuthGuard, RolesGuard],
+  providers: [UserService],
+  exports: [UserService],
 })
-export class UserModule { }
+export class UserModule {}

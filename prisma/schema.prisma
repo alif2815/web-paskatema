@@ -25,9 +25,11 @@ model User {
   role      Role     @default(USER)
   phone     String?
   bio       String?  @db.Text
-  
+  avatarId  String?
+  avatar    Media?   @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: SetNull)
+
   // Relasi
-  mediaUploaded Media[]
+  mediaUploaded Media[]       @relation("UserUploads")
   structures    Structure[]
   votes         Vote[]
   candidates    Candidate[]
@@ -48,8 +50,9 @@ model Media {
   mimeType     String
   size         Int
   uploaderId   String
-  uploader     User     @relation(fields: [uploaderId], references: [id])
-  
+  uploader     User     @relation("UserUploads", fields: [uploaderId], references: [id])
+
+  userAvatars  User[]   @relation("UserAvatar")
   newsCovers   News[]
   eventPosters Event[]
   achievements Achievement[]
