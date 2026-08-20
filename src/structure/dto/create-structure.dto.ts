@@ -1,19 +1,19 @@
-import { IsString, IsNotEmpty, IsOptional } from 'class-validator';
+import { IsUUID, IsNotEmpty, IsOptional } from 'class-validator';
 
 export class CreateStructureDto {
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   userId!: string;
 
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   positionId!: string;
 
-  @IsString()
+  @IsUUID()
   @IsNotEmpty()
   periodId!: string;
 
-  @IsString()
+  @IsUUID()
   @IsOptional()
   imageId?: string;
   
