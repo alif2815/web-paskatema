@@ -19,7 +19,7 @@ export class ChangePasswordDto {
   newPassword: string;
 
   @ApiProperty({
-    description: 'Konfirmasi password baru',
+    description: 'Konfirmasi password baru (harus sama dengan password baru)',
     example: 'NewPassword123',
   })
   @IsString()
