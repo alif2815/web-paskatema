@@ -1,4 +1,12 @@
-import { PartialType } from '@nestjs/swagger';
-import { CreateRegistrationDto } from './create-registration.dto';
+import { IsEnum, IsOptional } from 'class-validator';
+import { StatusReg } from '@prisma/client';
 
-export class UpdateRegistrationDto extends PartialType(CreateRegistrationDto) {}
+/**
+ * DTO untuk update status pendaftaran (khusus ADMIN).
+ * Hanya field status yang bisa diubah oleh admin.
+ */
+export class UpdateRegistrationDto {
+  @IsEnum(StatusReg)
+  @IsOptional()
+  status?: StatusReg;
+}
