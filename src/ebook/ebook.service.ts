@@ -1,26 +1,138 @@
-import { Injectable } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
+
+import { PrismaService } from '../prisma/prisma.service';
+
 import { CreateEbookDto } from './dto/create-ebook.dto';
 import { UpdateEbookDto } from './dto/update-ebook.dto';
 
 @Injectable()
 export class EbookService {
-  create(createEbookDto: CreateEbookDto) {
-    return 'This action adds a new ebook';
+  constructor(private readonly prisma: PrismaService) {}
+
+  async create(createEbookDto: CreateEbookDto) {
+    const { title, description, fileId } = createEbookDto;
+
+    const file = await this.prisma.media.findUnique({
+      where: {
+        id: fileId,
+      },
+    });
+
+    if (!file) {
+      throw new NotFoundException('File EBook tidak ditemukan');
+    }
+
+    if (file.mimeType !== 'application/pdf') {
+      throw new ConflictException(
+        'Media yang digunakan untuk EBook harus berupa PDF',
+      );
+    }
+
+    return this.prisma.eBook.create({
+      data: {
+        title,
+        description,
+        fileId,
+      },
+      include: {
+        file: true,
+      },
+    });
   }
 
-  findAll() {
-    return `This action returns all ebook`;
+  async findAll() {
+    return this.prisma.eBook.findMany({
+      orderBy: {
+        createdAt: 'desc',
+      },
+      include: {
+        file: true,
+      },
+    });
   }
 
-  findOne(id: number) {
-    return `This action returns a #${id} ebook`;
+  async findOne(id: string) {
+    const ebook = await this.prisma.eBook.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        file: true,
+      },
+    });
+
+    if (!ebook) {
+      throw new NotFoundException('EBook tidak ditemukan');
+    }
+
+    return ebook;
   }
 
-  update(id: number, updateEbookDto: UpdateEbookDto) {
-    return `This action updates a #${id} ebook`;
+  async update(id: string, updateEbookDto: UpdateEbookDto) {
+    const existingEbook = await this.prisma.eBook.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!existingEbook) {
+      throw new NotFoundException('EBook tidak ditemukan');
+    }
+
+    const { title, description, fileId } = updateEbookDto;
+
+    if (fileId) {
+      const file = await this.prisma.media.findUnique({
+        where: {
+          id: fileId,
+        },
+      });
+
+      if (!file) {
+        throw new NotFoundException('File EBook tidak ditemukan');
+      }
+
+      if (file.mimeType !== 'application/pdf') {
+        throw new ConflictException('File EBook harus berupa PDF');
+      }
+    }
+
+    return this.prisma.eBook.update({
+      where: {
+        id,
+      },
+      data: {
+        ...(title !== undefined && { title }),
+        ...(description !== undefined && {
+          description,
+        }),
+        ...(fileId !== undefined && { fileId }),
+      },
+      include: {
+        file: true,
+      },
+    });
   }
 
-  remove(id: number) {
-    return `This action removes a #${id} ebook`;
+  async remove(id: string) {
+    const ebook = await this.prisma.eBook.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!ebook) {
+      throw new NotFoundException('EBook tidak ditemukan');
+    }
+
+    return this.prisma.eBook.delete({
+      where: {
+        id,
+      },
+    });
   }
 }
