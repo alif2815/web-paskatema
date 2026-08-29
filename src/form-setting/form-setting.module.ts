@@ -4,6 +4,7 @@ import { FormSettingController } from './form-setting.controller';
 
 @Module({
   providers: [FormSettingService],
-  controllers: [FormSettingController]
+  controllers: [FormSettingController],
+  exports: [FormSettingService],
 })
 export class FormSettingModule {}

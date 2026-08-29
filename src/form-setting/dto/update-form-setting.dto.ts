@@ -1,30 +1,49 @@
-import { ApiProperty } from "@nestjs/swagger";
-import { IsBoolean, IsOptional, IsString } from "class-validator";
+import {
+  ApiPropertyOptional,
+} from '@nestjs/swagger';
+
+import {
+  ArrayMinSize,
+  IsArray,
+  IsBoolean,
+  IsNotEmpty,
+  IsOptional,
+  IsString,
+} from 'class-validator';
 
 export class UpdateFormSettingDto {
-    @ApiProperty({
-        description: "Judul form pendaftaran",
-        example: "Form Pendaftaran Ketua OSIS 2025",
-        required: false
-    })
-    @IsString()
-    @IsOptional()
-    title?: string;
+  @ApiPropertyOptional({
+    description:
+      'Judul form pendaftaran',
+    example:
+      'Pendaftaran Anggota PASKATEMA 2026/2027',
+  })
+  @IsString()
+  @IsOptional()
+  title?: string;
 
-    @ApiProperty({
-        description: "Status aktif form",
-        example: true,
-        required: false
-    })
-    @IsBoolean()
-    @IsOptional()
-    isActive?: boolean;
+  @ApiPropertyOptional({
+    description: 'Status aktif form',
+    example: true,
+  })
+  @IsBoolean()
+  @IsOptional()
+  isActive?: boolean;
 
-    @ApiProperty({
-        description: "Schema form dalam format JSON",
-        example: [{ "label": "Nama Lengkap", "type": "text", "required": true }],
-        required: false
-    })
-    @IsOptional()
-    schema?: object;
+  @ApiPropertyOptional({
+    description:
+      'Daftar pertanyaan/field dinamis pada form',
+    example: [
+      {
+        key: 'nama_lengkap',
+        label: 'Nama Lengkap',
+        type: 'text',
+        required: true,
+      },
+    ],
+  })
+  @IsArray()
+  @ArrayMinSize(1)
+  @IsOptional()
+  schema?: Record<string, unknown>[];
 }
