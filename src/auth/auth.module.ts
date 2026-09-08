@@ -15,7 +15,9 @@ import { JwtStrategy } from './strategy/jwt-strategy';
       imports: [ConfigModule],
       inject: [ConfigService],
       useFactory: (config: ConfigService) => ({
-        secret: config.get<string>('JWT_SECRET') ?? 'default_secret',
+        // JWT_SECRET divalidasi wajib ada saat startup (lihat app.module.ts
+        // validateEnv), jadi di sini aman diasumsikan selalu terisi.
+        secret: config.getOrThrow<string>('JWT_SECRET'),
         signOptions: {
           expiresIn: (config.get<string>('JWT_EXPIRES_IN') ??
             '7d') as StringValue,

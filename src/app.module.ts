@@ -18,9 +18,28 @@ import { StructureModule } from './structure/structure.module';
 import { RegistrationModule } from './registration/registration.module';
 import { FormSettingModule } from './form-setting/form-setting.module';
 
+/**
+ * Validasi environment variable wajib saat startup. Gagal cepat (throw)
+ * daripada membiarkan modul lain diam-diam jatuh ke nilai default yang
+ * tidak aman (misalnya JWT secret hardcoded di source code).
+ */
+function validateEnv(config: Record<string, unknown>) {
+  const jwtSecret = config.JWT_SECRET;
+
+  if (typeof jwtSecret !== 'string' || jwtSecret.trim().length < 16) {
+    throw new Error(
+      'JWT_SECRET wajib di-set sebagai environment variable (minimal 16 karakter). ' +
+        'Aplikasi tidak akan berjalan tanpa secret yang valid, demi mencegah ' +
+        'penandatanganan token JWT dengan nilai default yang dapat ditebak.',
+    );
+  }
+
+  return config;
+}
+
 @Module({
   imports: [
-    ConfigModule.forRoot({ isGlobal: true }),
+    ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
     AuthModule,
     UserModule,
     MediaModule,

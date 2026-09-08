@@ -25,7 +25,9 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     super({
       jwtFromRequest: ExtractJwt.fromAuthHeaderAsBearerToken(),
       ignoreExpiration: false,
-      secretOrKey: config.get<string>('JWT_SECRET') ?? 'default_secret',
+      // JWT_SECRET divalidasi wajib ada saat startup (lihat app.module.ts
+      // validateEnv), jadi di sini aman diasumsikan selalu terisi.
+      secretOrKey: config.getOrThrow<string>('JWT_SECRET'),
     });
   }
 
