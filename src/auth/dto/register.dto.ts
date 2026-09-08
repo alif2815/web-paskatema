@@ -4,7 +4,7 @@ import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 export class CreateAuthDto {
   @ApiProperty({
     description:
-      'Email address. Role ditentukan otomatis oleh server dari domain email (@paskatema.com -> ADMIN, selain itu -> USER); field ini tidak menerima role dari client.',
+      'Email address. Registrasi publik selalu membuat akun dengan role USER; field role tidak tersedia di sini. Akun ADMIN (hanya satu) dibuat lewat prisma/seed.ts, bukan lewat endpoint ini.',
     example: 'user@gmail.com',
   })
   @IsEmail()

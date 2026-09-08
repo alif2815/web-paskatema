@@ -29,12 +29,12 @@ export class AuthService {
   // REGISTER
   // =====================
   async register(dto: CreateAuthDto) {
-    // Role TIDAK PERNAH diambil dari input client — role ditentukan
-    // sepenuhnya oleh server berdasarkan domain email untuk mencegah
-    // client mengirim role: "ADMIN" secara langsung (privilege escalation).
-    const role: Role = dto.email.endsWith(ADMIN_EMAIL_DOMAIN)
-      ? Role.ADMIN
-      : Role.USER;
+    // Registrasi publik SELALU membuat akun dengan role USER — tidak ada
+    // jalur apa pun (input client, domain email, dsb.) yang bisa membuat
+    // akun ADMIN lewat endpoint ini. Aplikasi ini hanya punya satu akun
+    // ADMIN, dan itu dibuat lewat `prisma/seed.ts` (operator-only, lihat
+    // file tersebut), bukan lewat self-registration.
+    const role: Role = Role.USER;
 
     // Cek apakah email sudah digunakan
     const existingUser = await this.prisma.user.findUnique({
