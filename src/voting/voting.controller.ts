@@ -10,6 +10,7 @@ import {
 } from '@nestjs/common';
 
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
 
 import { VotingService } from './voting.service';
 
@@ -19,7 +20,8 @@ import { CreateCandidateDto } from './dto/create-candidate.dto';
 import { CastVoteDto } from './dto/cast-vote.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { GetUser } from '../auth/decorators/get-user.decorators';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { GetUser, Roles } from '../auth/decorators/get-user.decorators';
 
 @ApiTags('Voting')
 @Controller('voting')
@@ -30,7 +32,8 @@ export class VotingController {
   // voting period
   @Post()
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   create(@Body() createVotingDto: CreateVotingDto) {
     return this.votingService.create(createVotingDto);
   }
@@ -52,14 +55,16 @@ export class VotingController {
 
   @Patch(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   update(@Param('id') id: string, @Body() updateVotingDto: UpdateVotingDto) {
     return this.votingService.update(id, updateVotingDto);
   }
 
   @Delete(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.votingService.remove(id);
   }
@@ -69,7 +74,8 @@ export class VotingController {
 
   @Post(':votingId/candidates')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   createCandidate(
     @Param('votingId') votingId: string,
     @Body()
@@ -93,7 +99,8 @@ export class VotingController {
 
   @Patch(':votingId/candidates/:candidateId')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   updateCandidate(
     @Param('votingId') votingId: string,
     @Param('candidateId') candidateId: string,
@@ -109,7 +116,8 @@ export class VotingController {
 
   @Delete(':votingId/candidates/:candidateId')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   removeCandidate(
     @Param('votingId') votingId: string,
     @Param('candidateId') candidateId: string,

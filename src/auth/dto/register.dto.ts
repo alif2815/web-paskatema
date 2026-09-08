@@ -1,16 +1,10 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
-import {
-  IsEmail,
-  IsEnum,
-  IsOptional,
-  IsString,
-  MinLength,
-} from 'class-validator';
+import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
 
 export class CreateAuthDto {
   @ApiProperty({
-    description: 'Email address. Admin wajib menggunakan domain @paskatema.com',
+    description:
+      'Email address. Role ditentukan otomatis oleh server dari domain email (@paskatema.com -> ADMIN, selain itu -> USER); field ini tidak menerima role dari client.',
     example: 'user@gmail.com',
   })
   @IsEmail()
@@ -49,14 +43,4 @@ export class CreateAuthDto {
   @IsString()
   @IsOptional()
   bio?: string;
-
-  @ApiProperty({
-    description: 'Role akun. Admin wajib menggunakan email @paskatema.com',
-    enum: Role,
-    example: Role.USER,
-    required: false,
-  })
-  @IsEnum(Role)
-  @IsOptional()
-  role?: Role;
 }

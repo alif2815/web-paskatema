@@ -13,11 +13,14 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { Role } from '@prisma/client';
 import { Request as ExpressRequest } from 'express';
 
 import { MediaService } from './media.service';
 import { documentMulterConfig } from './document-multer.config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { Roles } from '../auth/decorators/get-user.decorators';
 import { AuthenticatedUser } from '../auth/strategy/jwt-strategy';
 
 type RequestWithUser = ExpressRequest & { user: AuthenticatedUser };
@@ -64,7 +67,8 @@ export class MediaController {
 
   @Delete(':id')
   @ApiBearerAuth()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.mediaService.remove(id);
   }

@@ -29,21 +29,12 @@ export class AuthService {
   // REGISTER
   // =====================
   async register(dto: CreateAuthDto) {
-    // Validasi: akun ADMIN wajib menggunakan email @paskatema.com
-    if (dto.role === Role.ADMIN) {
-      if (!dto.email.endsWith(ADMIN_EMAIL_DOMAIN)) {
-        throw new ForbiddenException(
-          `Akun admin hanya dapat didaftarkan dengan email berformat *${ADMIN_EMAIL_DOMAIN}`,
-        );
-      }
-    }
-
-    // Validasi kebalikan: email @paskatema.com HARUS mendaftar sebagai ADMIN
-    if (dto.email.endsWith(ADMIN_EMAIL_DOMAIN) && dto.role !== Role.ADMIN) {
-      throw new ForbiddenException(
-        `Email dengan domain ${ADMIN_EMAIL_DOMAIN} hanya dapat didaftarkan sebagai ADMIN`,
-      );
-    }
+    // Role TIDAK PERNAH diambil dari input client — role ditentukan
+    // sepenuhnya oleh server berdasarkan domain email untuk mencegah
+    // client mengirim role: "ADMIN" secara langsung (privilege escalation).
+    const role: Role = dto.email.endsWith(ADMIN_EMAIL_DOMAIN)
+      ? Role.ADMIN
+      : Role.USER;
 
     // Cek apakah email sudah digunakan
     const existingUser = await this.prisma.user.findUnique({
@@ -65,7 +56,7 @@ export class AuthService {
         name: dto.name,
         phone: dto.phone,
         bio: dto.bio,
-        role: dto.role,
+        role,
       },
       select: {
         id: true,

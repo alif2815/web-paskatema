@@ -9,8 +9,11 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
+import { Role } from '@prisma/client';
+
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
-import { GetUser } from '../auth/decorators/get-user.decorators';
+import { RolesGuard } from '../auth/guards/roles.guard';
+import { GetUser, Roles } from '../auth/decorators/get-user.decorators';
 
 import { NewsService } from './news.service';
 
@@ -22,7 +25,8 @@ export class NewsController {
   constructor(private readonly newsService: NewsService) {}
 
   @Post()
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   create(@Body() createNewsDto: CreateNewsDto, @GetUser('id') userId: string) {
     return this.newsService.create(createNewsDto, userId);
   }
@@ -43,13 +47,15 @@ export class NewsController {
   }
 
   @Patch(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   update(@Param('id') id: string, @Body() updateNewsDto: UpdateNewsDto) {
     return this.newsService.update(id, updateNewsDto);
   }
 
   @Delete(':id')
-  @UseGuards(JwtAuthGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   remove(@Param('id') id: string) {
     return this.newsService.remove(id);
   }
