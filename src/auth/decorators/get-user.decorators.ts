@@ -4,9 +4,14 @@ import {
   SetMetadata,
 } from '@nestjs/common';
 import { Role } from '@prisma/client';
+import { Request } from 'express';
+
+import { AuthenticatedUser } from '../strategy/jwt-strategy';
 
 /** Key untuk metadata roles yang digunakan RolesGuard */
 export const ROLES_KEY = 'roles';
+
+type RequestWithUser = Request & { user?: AuthenticatedUser };
 
 /**
  * Decorator untuk mengambil data user dari request (setelah JWT guard dijalankan).
@@ -20,8 +25,8 @@ export const ROLES_KEY = 'roles';
  * @GetUser('role') role: Role
  */
 export const GetUser = createParamDecorator(
-  (data: string | undefined, ctx: ExecutionContext) => {
-    const request = ctx.switchToHttp().getRequest();
+  (data: keyof AuthenticatedUser | undefined, ctx: ExecutionContext) => {
+    const request = ctx.switchToHttp().getRequest<RequestWithUser>();
     const user = request.user;
 
     return data ? user?.[data] : user;

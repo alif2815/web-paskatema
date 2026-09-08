@@ -6,8 +6,12 @@ import {
 } from '@nestjs/common';
 import { Reflector } from '@nestjs/core';
 import { Role } from '@prisma/client';
+import { Request } from 'express';
 
 import { ROLES_KEY } from '../decorators/get-user.decorators';
+import { AuthenticatedUser } from '../strategy/jwt-strategy';
+
+type RequestWithUser = Request & { user?: AuthenticatedUser };
 
 /**
  * Guard berbasis role — hanya mengizinkan akses jika user memiliki role yang sesuai.
@@ -28,7 +32,7 @@ export class RolesGuard implements CanActivate {
       return true;
     }
 
-    const { user } = context.switchToHttp().getRequest();
+    const { user } = context.switchToHttp().getRequest<RequestWithUser>();
 
     if (!user?.role || !requiredRoles.includes(user.role)) {
       throw new ForbiddenException('Anda tidak memiliki akses ke resource ini');

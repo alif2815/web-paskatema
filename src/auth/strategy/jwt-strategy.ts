@@ -53,3 +53,6 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
     return user;
   }
 }
+
+/** Bentuk `request.user` yang di-attach passport setelah JwtStrategy.validate() berhasil. */
+export type AuthenticatedUser = Awaited<ReturnType<JwtStrategy['validate']>>;

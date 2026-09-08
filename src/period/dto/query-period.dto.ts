@@ -9,7 +9,7 @@ export class QueryPeriodDto {
   })
   @IsBoolean()
   @IsOptional()
-  @Transform(({ value }) => {
+  @Transform(({ value }: { value: unknown }) => {
     if (value === 'true') return true;
     if (value === 'false') return false;
     return value;

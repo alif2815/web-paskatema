@@ -13,11 +13,14 @@ import {
 import { FileInterceptor } from '@nestjs/platform-express';
 
 import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
+import { Request as ExpressRequest } from 'express';
 
 import { MediaService } from './media.service';
-import { multerConfig } from './multer.config';
 import { documentMulterConfig } from './document-multer.config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
+import { AuthenticatedUser } from '../auth/strategy/jwt-strategy';
+
+type RequestWithUser = ExpressRequest & { user: AuthenticatedUser };
 
 @Controller('media')
 export class MediaController {
@@ -42,7 +45,7 @@ export class MediaController {
   @UseInterceptors(FileInterceptor('file', documentMulterConfig))
   uploadDocument(
     @UploadedFile() file: Express.Multer.File,
-    @Request() request: any,
+    @Request() request: RequestWithUser,
   ) {
     const baseUrl = `${request.protocol}://${request.get('host')}`;
 

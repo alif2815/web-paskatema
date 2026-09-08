@@ -4,7 +4,6 @@ import {
   ArrayMinSize,
   IsArray,
   IsBoolean,
-  IsNotEmpty,
   IsOptional,
   IsString,
 } from 'class-validator';

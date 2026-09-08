@@ -6,13 +6,10 @@ import {
   Param,
   Patch,
   Post,
-  Res,
   UseGuards,
 } from '@nestjs/common';
 
 import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
-
-import { Response } from 'express';
 
 import { ShortLinkService } from './short-link.service';
 
