@@ -9,10 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  ApiBearerAuth,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { AchievementService } from './achievement.service';
 import { CreateAchievementDto } from './dto/create-achievement.dto';
@@ -22,9 +19,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('Achievement')
 @Controller('achievement')
 export class AchievementController {
-  constructor(
-    private readonly achievementService: AchievementService,
-  ) {}
+  constructor(private readonly achievementService: AchievementService) {}
 
   @Post()
   @ApiBearerAuth()
@@ -33,9 +28,7 @@ export class AchievementController {
     @Body()
     createAchievementDto: CreateAchievementDto,
   ) {
-    return this.achievementService.create(
-      createAchievementDto,
-    );
+    return this.achievementService.create(createAchievementDto);
   }
 
   @Get()
@@ -44,9 +37,7 @@ export class AchievementController {
   }
 
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-  ) {
+  findOne(@Param('id') id: string) {
     return this.achievementService.findOne(id);
   }
 
@@ -58,18 +49,13 @@ export class AchievementController {
     @Body()
     updateAchievementDto: UpdateAchievementDto,
   ) {
-    return this.achievementService.update(
-      id,
-      updateAchievementDto,
-    );
+    return this.achievementService.update(id, updateAchievementDto);
   }
 
   @Delete(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  remove(
-    @Param('id') id: string,
-  ) {
+  remove(@Param('id') id: string) {
     return this.achievementService.remove(id);
   }
 }

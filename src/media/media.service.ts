@@ -1,20 +1,11 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
 
 @Injectable()
 export class MediaService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    file: Express.Multer.File,
-    uploaderId: string,
-    baseUrl: string,
-  ) {
+  async create(file: Express.Multer.File, uploaderId: string, baseUrl: string) {
     if (!file) {
       throw new Error('File wajib diupload');
     }
@@ -64,9 +55,7 @@ export class MediaService {
     });
 
     if (!media) {
-      throw new NotFoundException(
-        'Media tidak ditemukan',
-      );
+      throw new NotFoundException('Media tidak ditemukan');
     }
 
     return media;
@@ -80,9 +69,7 @@ export class MediaService {
     });
 
     if (!media) {
-      throw new NotFoundException(
-        'Media tidak ditemukan',
-      );
+      throw new NotFoundException('Media tidak ditemukan');
     }
 
     return this.prisma.media.delete({

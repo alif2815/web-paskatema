@@ -5,10 +5,7 @@ import { RedirectController } from './redirect.controller';
 import { ShortLinkService } from './short-link.service';
 
 @Module({
-  controllers: [
-    ShortLinkController,
-    RedirectController,
-  ],
+  controllers: [ShortLinkController, RedirectController],
   providers: [ShortLinkService],
   exports: [ShortLinkService],
 })

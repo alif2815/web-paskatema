@@ -16,5 +16,4 @@ export class CreateStructureDto {
   @IsUUID()
   @IsOptional()
   imageId?: string;
-  
 }

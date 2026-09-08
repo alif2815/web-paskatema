@@ -10,10 +10,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  ApiBearerAuth,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { Response } from 'express';
 
@@ -27,9 +24,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('Short Link')
 @Controller('short-link')
 export class ShortLinkController {
-  constructor(
-    private readonly shortLinkService: ShortLinkService,
-  ) {}
+  constructor(private readonly shortLinkService: ShortLinkService) {}
 
   @Post()
   @ApiBearerAuth()
@@ -38,9 +33,7 @@ export class ShortLinkController {
     @Body()
     createShortLinkDto: CreateShortLinkDto,
   ) {
-    return this.shortLinkService.create(
-      createShortLinkDto,
-    );
+    return this.shortLinkService.create(createShortLinkDto);
   }
 
   @Get()
@@ -65,10 +58,7 @@ export class ShortLinkController {
     @Body()
     updateShortLinkDto: UpdateShortLinkDto,
   ) {
-    return this.shortLinkService.update(
-      id,
-      updateShortLinkDto,
-    );
+    return this.shortLinkService.update(id, updateShortLinkDto);
   }
 
   @Delete(':id')

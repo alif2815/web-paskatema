@@ -10,17 +10,11 @@ export const multerConfig = {
     filename: (
       _request: Express.Request,
       file: Express.Multer.File,
-      callback: (
-        error: Error | null,
-        filename: string,
-      ) => void,
+      callback: (error: Error | null, filename: string) => void,
     ) => {
       const extension = extname(file.originalname);
 
-      callback(
-        null,
-        `${randomUUID()}${extension}`,
-      );
+      callback(null, `${randomUUID()}${extension}`);
     },
   }),
 
@@ -31,22 +25,13 @@ export const multerConfig = {
   fileFilter: (
     _request: Express.Request,
     file: Express.Multer.File,
-    callback: (
-      error: Error | null,
-      acceptFile: boolean,
-    ) => void,
+    callback: (error: Error | null, acceptFile: boolean) => void,
   ) => {
-    const allowedMimeTypes = [
-      'image/jpeg',
-      'image/png',
-      'image/webp',
-    ];
+    const allowedMimeTypes = ['image/jpeg', 'image/png', 'image/webp'];
 
     if (!allowedMimeTypes.includes(file.mimetype)) {
       return callback(
-        new BadRequestException(
-          'File harus berupa JPG, PNG, atau WEBP',
-        ),
+        new BadRequestException('File harus berupa JPG, PNG, atau WEBP'),
         false,
       );
     }

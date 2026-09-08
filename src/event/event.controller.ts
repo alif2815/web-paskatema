@@ -21,19 +21,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('Events')
 @Controller('events')
 export class EventController {
-  constructor(
-    private readonly eventService: EventService,
-  ) {}
+  constructor(private readonly eventService: EventService) {}
 
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  create(
-    @Body() createEventDto: CreateEventDto,
-  ) {
-    return this.eventService.create(
-      createEventDto,
-    );
+  create(@Body() createEventDto: CreateEventDto) {
+    return this.eventService.create(createEventDto);
   }
 
   @Get()
@@ -59,14 +53,8 @@ export class EventController {
   @Patch(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  update(
-    @Param('id') id: string,
-    @Body() updateEventDto: UpdateEventDto,
-  ) {
-    return this.eventService.update(
-      id,
-      updateEventDto,
-    );
+  update(@Param('id') id: string, @Body() updateEventDto: UpdateEventDto) {
+    return this.eventService.update(id, updateEventDto);
   }
 
   @Delete(':id')

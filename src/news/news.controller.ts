@@ -19,20 +19,12 @@ import { UpdateNewsDto } from './dto/update-news.dto';
 
 @Controller('news')
 export class NewsController {
-  constructor(
-    private readonly newsService: NewsService,
-  ) {}
+  constructor(private readonly newsService: NewsService) {}
 
   @Post()
   @UseGuards(JwtAuthGuard)
-  create(
-    @Body() createNewsDto: CreateNewsDto,
-    @GetUser('id') userId: string,
-  ) {
-    return this.newsService.create(
-      createNewsDto,
-      userId,
-    );
+  create(@Body() createNewsDto: CreateNewsDto, @GetUser('id') userId: string) {
+    return this.newsService.create(createNewsDto, userId);
   }
 
   @Get()
@@ -41,36 +33,24 @@ export class NewsController {
   }
 
   @Get('slug/:slug')
-  findBySlug(
-    @Param('slug') slug: string,
-  ) {
+  findBySlug(@Param('slug') slug: string) {
     return this.newsService.findBySlug(slug);
   }
 
   @Get(':id')
-  findOne(
-    @Param('id') id: string,
-  ) {
+  findOne(@Param('id') id: string) {
     return this.newsService.findOne(id);
   }
 
   @Patch(':id')
   @UseGuards(JwtAuthGuard)
-  update(
-    @Param('id') id: string,
-    @Body() updateNewsDto: UpdateNewsDto,
-  ) {
-    return this.newsService.update(
-      id,
-      updateNewsDto,
-    );
+  update(@Param('id') id: string, @Body() updateNewsDto: UpdateNewsDto) {
+    return this.newsService.update(id, updateNewsDto);
   }
 
   @Delete(':id')
   @UseGuards(JwtAuthGuard)
-  remove(
-    @Param('id') id: string,
-  ) {
+  remove(@Param('id') id: string) {
     return this.newsService.remove(id);
   }
 }

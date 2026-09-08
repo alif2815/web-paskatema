@@ -4,6 +4,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -537,9 +538,15 @@ export class VotingService {
         },
       });
     } catch (error) {
-      throw new ConflictException(
-        'Anda sudah memberikan suara pada voting ini',
-      );
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'Anda sudah memberikan suara pada voting ini',
+        );
+      }
+      throw error;
     }
   }
 

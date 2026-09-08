@@ -3,6 +3,7 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
+import { Prisma } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,9 +12,7 @@ import { UpdateStructureDto } from './dto/update-structure.dto';
 
 @Injectable()
 export class StructureService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private readonly includeRelations = {
     user: {
@@ -30,99 +29,84 @@ export class StructureService {
     image: true,
   };
 
-  private async validateRelations(
-    data: {
-      userId?: string;
-      positionId?: string;
-      periodId?: string;
-      imageId?: string;
-    },
-  ) {
+  private async validateRelations(data: {
+    userId?: string;
+    positionId?: string;
+    periodId?: string;
+    imageId?: string;
+  }) {
     if (data.userId) {
-      const user =
-        await this.prisma.user.findUnique({
-          where: {
-            id: data.userId,
-          },
-        });
+      const user = await this.prisma.user.findUnique({
+        where: {
+          id: data.userId,
+        },
+      });
 
       if (!user) {
-        throw new NotFoundException(
-          'User tidak ditemukan',
-        );
+        throw new NotFoundException('User tidak ditemukan');
       }
     }
 
     if (data.positionId) {
-      const position =
-        await this.prisma.position.findUnique({
-          where: {
-            id: data.positionId,
-          },
-        });
+      const position = await this.prisma.position.findUnique({
+        where: {
+          id: data.positionId,
+        },
+      });
 
       if (!position) {
-        throw new NotFoundException(
-          'Jabatan tidak ditemukan',
-        );
+        throw new NotFoundException('Jabatan tidak ditemukan');
       }
     }
 
     if (data.periodId) {
-      const period =
-        await this.prisma.period.findUnique({
-          where: {
-            id: data.periodId,
-          },
-        });
+      const period = await this.prisma.period.findUnique({
+        where: {
+          id: data.periodId,
+        },
+      });
 
       if (!period) {
-        throw new NotFoundException(
-          'Periode tidak ditemukan',
-        );
+        throw new NotFoundException('Periode tidak ditemukan');
       }
     }
 
     if (data.imageId) {
-      const image =
-        await this.prisma.media.findUnique({
-          where: {
-            id: data.imageId,
-          },
-        });
+      const image = await this.prisma.media.findUnique({
+        where: {
+          id: data.imageId,
+        },
+      });
 
       if (!image) {
-        throw new NotFoundException(
-          'Media foto struktur tidak ditemukan',
-        );
+        throw new NotFoundException('Media foto struktur tidak ditemukan');
       }
     }
   }
 
-  async create(
-    createStructureDto: CreateStructureDto,
-  ) {
-    await this.validateRelations(
-      createStructureDto,
-    );
+  async create(createStructureDto: CreateStructureDto) {
+    await this.validateRelations(createStructureDto);
 
     try {
       return await this.prisma.structure.create({
         data: {
           userId: createStructureDto.userId,
-          positionId:
-            createStructureDto.positionId,
-          periodId:
-            createStructureDto.periodId,
-          imageId:
-            createStructureDto.imageId,
+          positionId: createStructureDto.positionId,
+          periodId: createStructureDto.periodId,
+          imageId: createStructureDto.imageId,
         },
         include: this.includeRelations,
       });
     } catch (error) {
-      throw new ConflictException(
-        'User sudah memiliki struktur pada periode tersebut',
-      );
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'User sudah memiliki struktur pada periode tersebut',
+        );
+      }
+      throw error;
     }
   }
 
@@ -145,63 +129,45 @@ export class StructureService {
   }
 
   async findOne(id: string) {
-    const structure =
-      await this.prisma.structure.findUnique({
-        where: {
-          id,
-        },
-        include: this.includeRelations,
-      });
+    const structure = await this.prisma.structure.findUnique({
+      where: {
+        id,
+      },
+      include: this.includeRelations,
+    });
 
     if (!structure) {
-      throw new NotFoundException(
-        'Structure tidak ditemukan',
-      );
+      throw new NotFoundException('Structure tidak ditemukan');
     }
 
     return structure;
   }
 
-  async update(
-    id: string,
-    updateStructureDto: UpdateStructureDto,
-  ) {
-    const existingStructure =
-      await this.prisma.structure.findUnique({
-        where: {
-          id,
-        },
-      });
+  async update(id: string, updateStructureDto: UpdateStructureDto) {
+    const existingStructure = await this.prisma.structure.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existingStructure) {
-      throw new NotFoundException(
-        'Structure tidak ditemukan',
-      );
+      throw new NotFoundException('Structure tidak ditemukan');
     }
 
-    await this.validateRelations(
-      updateStructureDto,
-    );
+    await this.validateRelations(updateStructureDto);
 
     const data = {
-      ...(updateStructureDto.userId !==
-        undefined && {
+      ...(updateStructureDto.userId !== undefined && {
         userId: updateStructureDto.userId,
       }),
-      ...(updateStructureDto.positionId !==
-        undefined && {
-        positionId:
-          updateStructureDto.positionId,
+      ...(updateStructureDto.positionId !== undefined && {
+        positionId: updateStructureDto.positionId,
       }),
-      ...(updateStructureDto.periodId !==
-        undefined && {
-        periodId:
-          updateStructureDto.periodId,
+      ...(updateStructureDto.periodId !== undefined && {
+        periodId: updateStructureDto.periodId,
       }),
-      ...(updateStructureDto.imageId !==
-        undefined && {
-        imageId:
-          updateStructureDto.imageId,
+      ...(updateStructureDto.imageId !== undefined && {
+        imageId: updateStructureDto.imageId,
       }),
     };
 
@@ -214,24 +180,27 @@ export class StructureService {
         include: this.includeRelations,
       });
     } catch (error) {
-      throw new ConflictException(
-        'User sudah memiliki struktur pada periode tersebut',
-      );
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2002'
+      ) {
+        throw new ConflictException(
+          'User sudah memiliki struktur pada periode tersebut',
+        );
+      }
+      throw error;
     }
   }
 
   async remove(id: string) {
-    const existingStructure =
-      await this.prisma.structure.findUnique({
-        where: {
-          id,
-        },
-      });
+    const existingStructure = await this.prisma.structure.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existingStructure) {
-      throw new NotFoundException(
-        'Structure tidak ditemukan',
-      );
+      throw new NotFoundException('Structure tidak ditemukan');
     }
 
     return this.prisma.structure.delete({

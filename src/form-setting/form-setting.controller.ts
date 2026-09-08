@@ -9,42 +9,27 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  ApiBearerAuth,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { Role } from '@prisma/client';
 
-import {
-  Roles,
-} from '../auth/decorators/get-user.decorators';
+import { Roles } from '../auth/decorators/get-user.decorators';
 
-import {
-  JwtAuthGuard,
-} from '../auth/guards/jwt-auth.guard';
+import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 
-import {
-  RolesGuard,
-} from '../auth/guards/roles.guard';
+import { RolesGuard } from '../auth/guards/roles.guard';
 
 import { FormSettingService } from './form-setting.service';
 
-import {
-  CreateFormSettingDto,
-} from './dto/create-form-setting.dto';
+import { CreateFormSettingDto } from './dto/create-form-setting.dto';
 
-import {
-  UpdateFormSettingDto,
-} from './dto/update-form-setting.dto';
+import { UpdateFormSettingDto } from './dto/update-form-setting.dto';
 
 @ApiTags('Form Setting')
 @UseGuards(JwtAuthGuard)
 @Controller('form-setting')
 export class FormSettingController {
-  constructor(
-    private readonly formSettingService: FormSettingService,
-  ) {}
+  constructor(private readonly formSettingService: FormSettingService) {}
 
   // ==========================================================
   // PUBLIC / AUTH USER
@@ -82,9 +67,7 @@ export class FormSettingController {
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)
-  findOne(
-    @Param('id') id: string,
-  ) {
+  findOne(@Param('id') id: string) {
     return this.formSettingService.findOne(id);
   }
 
@@ -97,10 +80,7 @@ export class FormSettingController {
     @Body()
     dto: UpdateFormSettingDto,
   ) {
-    return this.formSettingService.update(
-      id,
-      dto,
-    );
+    return this.formSettingService.update(id, dto);
   }
 
   @Patch(':id/status')
@@ -112,19 +92,14 @@ export class FormSettingController {
     @Body('isActive')
     isActive: boolean,
   ) {
-    return this.formSettingService.toggleFormStatus(
-      id,
-      isActive,
-    );
+    return this.formSettingService.toggleFormStatus(id, isActive);
   }
 
   @Delete(':id')
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)
-  remove(
-    @Param('id') id: string,
-  ) {
+  remove(@Param('id') id: string) {
     return this.formSettingService.remove(id);
   }
 }

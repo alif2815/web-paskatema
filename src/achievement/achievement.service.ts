@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateAchievementDto } from './dto/create-achievement.dto';
@@ -9,33 +6,21 @@ import { UpdateAchievementDto } from './dto/update-achievement.dto';
 
 @Injectable()
 export class AchievementService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    createAchievementDto: CreateAchievementDto,
-  ) {
-    const {
-      title,
-      year,
-      description,
-      imageId,
-    } = createAchievementDto;
+  async create(createAchievementDto: CreateAchievementDto) {
+    const { title, year, description, imageId } = createAchievementDto;
 
     // Pastikan Media image benar-benar ada
     if (imageId) {
-      const image =
-        await this.prisma.media.findUnique({
-          where: {
-            id: imageId,
-          },
-        });
+      const image = await this.prisma.media.findUnique({
+        where: {
+          id: imageId,
+        },
+      });
 
       if (!image) {
-        throw new NotFoundException(
-          'Media gambar prestasi tidak ditemukan',
-        );
+        throw new NotFoundException('Media gambar prestasi tidak ditemukan');
       }
     }
 
@@ -64,61 +49,44 @@ export class AchievementService {
   }
 
   async findOne(id: string) {
-    const achievement =
-      await this.prisma.achievement.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          image: true,
-        },
-      });
+    const achievement = await this.prisma.achievement.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        image: true,
+      },
+    });
 
     if (!achievement) {
-      throw new NotFoundException(
-        'Achievement tidak ditemukan',
-      );
+      throw new NotFoundException('Achievement tidak ditemukan');
     }
 
     return achievement;
   }
 
-  async update(
-    id: string,
-    updateAchievementDto: UpdateAchievementDto,
-  ) {
-    const existingAchievement =
-      await this.prisma.achievement.findUnique({
+  async update(id: string, updateAchievementDto: UpdateAchievementDto) {
+    const existingAchievement = await this.prisma.achievement.findUnique({
+      where: {
+        id,
+      },
+    });
+
+    if (!existingAchievement) {
+      throw new NotFoundException('Achievement tidak ditemukan');
+    }
+
+    const { title, year, description, imageId } = updateAchievementDto;
+
+    if (imageId) {
+      const image = await this.prisma.media.findUnique({
         where: {
-          id,
+          id: imageId,
         },
       });
 
-    if (!existingAchievement) {
-      throw new NotFoundException(
-        'Achievement tidak ditemukan',
-      );
-    }
-
-    const {
-      title,
-      year,
-      description,
-      imageId,
-    } = updateAchievementDto;
-
-    if (imageId) {
-      const image =
-        await this.prisma.media.findUnique({
-          where: {
-            id: imageId,
-          },
-        });
-
       if (!image) {
-        throw new NotFoundException(
-          'Media gambar prestasi tidak ditemukan',
-        );
+        throw new NotFoundException('Media gambar prestasi tidak ditemukan');
       }
     }
 
@@ -157,17 +125,14 @@ export class AchievementService {
   }
 
   async remove(id: string) {
-    const existingAchievement =
-      await this.prisma.achievement.findUnique({
-        where: {
-          id,
-        },
-      });
+    const existingAchievement = await this.prisma.achievement.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existingAchievement) {
-      throw new NotFoundException(
-        'Achievement tidak ditemukan',
-      );
+      throw new NotFoundException('Achievement tidak ditemukan');
     }
 
     return this.prisma.achievement.delete({

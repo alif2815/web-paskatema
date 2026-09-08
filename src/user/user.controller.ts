@@ -59,15 +59,13 @@ export class UserController {
    * Memperbarui profil diri sendiri (nama, phone, bio, avatarId)
    */
   @ApiOperation({
-    summary: 'Update profil user yang sedang login (nama, phone, bio, avatarId)',
+    summary:
+      'Update profil user yang sedang login (nama, phone, bio, avatarId)',
   })
   @ApiResponse({ status: 200, description: 'Profil berhasil diperbarui' })
   @ApiResponse({ status: 404, description: 'Media avatar tidak ditemukan' })
   @Patch('me')
-  updateProfile(
-    @GetUser('id') userId: string,
-    @Body() dto: UpdateProfileDto,
-  ) {
+  updateProfile(@GetUser('id') userId: string, @Body() dto: UpdateProfileDto) {
     return this.userService.updateProfile(userId, dto);
   }
 
@@ -94,7 +92,10 @@ export class UserController {
     },
   })
   @ApiResponse({ status: 201, description: 'Avatar berhasil diupload' })
-  @ApiResponse({ status: 400, description: 'Format atau ukuran file tidak valid' })
+  @ApiResponse({
+    status: 400,
+    description: 'Format atau ukuran file tidak valid',
+  })
   @Post('me/avatar')
   @UseInterceptors(FileInterceptor('file'))
   uploadAvatar(
@@ -120,7 +121,10 @@ export class UserController {
     status: 200,
     description: 'Daftar user berhasil diambil dengan metadata pagination',
   })
-  @ApiResponse({ status: 403, description: 'Akses ditolak — hanya untuk Admin' })
+  @ApiResponse({
+    status: 403,
+    description: 'Akses ditolak — hanya untuk Admin',
+  })
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Get()

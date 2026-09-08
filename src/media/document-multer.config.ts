@@ -10,19 +10,11 @@ export const documentMulterConfig = {
     filename: (
       _request: Express.Request,
       file: Express.Multer.File,
-      callback: (
-        error: Error | null,
-        filename: string,
-      ) => void,
+      callback: (error: Error | null, filename: string) => void,
     ) => {
-      const extension = extname(
-        file.originalname,
-      );
+      const extension = extname(file.originalname);
 
-      callback(
-        null,
-        `${randomUUID()}${extension}`,
-      );
+      callback(null, `${randomUUID()}${extension}`);
     },
   }),
 
@@ -34,16 +26,11 @@ export const documentMulterConfig = {
   fileFilter: (
     _request: Express.Request,
     file: Express.Multer.File,
-    callback: (
-      error: Error | null,
-      acceptFile: boolean,
-    ) => void,
+    callback: (error: Error | null, acceptFile: boolean) => void,
   ) => {
     if (file.mimetype !== 'application/pdf') {
       return callback(
-        new BadRequestException(
-          'File EBook harus berupa PDF',
-        ),
+        new BadRequestException('File EBook harus berupa PDF'),
         false,
       );
     }

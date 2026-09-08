@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -10,13 +7,9 @@ import { UpdatePositionDto } from './dto/update-position.dto';
 
 @Injectable()
 export class PositionService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
-  async create(
-    createPositionDto: CreatePositionDto,
-  ) {
+  async create(createPositionDto: CreatePositionDto) {
     return this.prisma.position.create({
       data: {
         name: createPositionDto.name,
@@ -34,43 +27,31 @@ export class PositionService {
   }
 
   async findOne(id: string) {
-    const position =
-      await this.prisma.position.findUnique({
-        where: {
-          id,
-        },
-      });
+    const position = await this.prisma.position.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!position) {
-      throw new NotFoundException(
-        'Jabatan tidak ditemukan',
-      );
+      throw new NotFoundException('Jabatan tidak ditemukan');
     }
 
     return position;
   }
 
-  async update(
-    id: string,
-    updatePositionDto: UpdatePositionDto,
-  ) {
-    const existingPosition =
-      await this.prisma.position.findUnique({
-        where: {
-          id,
-        },
-      });
+  async update(id: string, updatePositionDto: UpdatePositionDto) {
+    const existingPosition = await this.prisma.position.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existingPosition) {
-      throw new NotFoundException(
-        'Jabatan tidak ditemukan',
-      );
+      throw new NotFoundException('Jabatan tidak ditemukan');
     }
 
-    const {
-      name,
-      level,
-    } = updatePositionDto;
+    const { name, level } = updatePositionDto;
 
     return this.prisma.position.update({
       where: {
@@ -84,17 +65,14 @@ export class PositionService {
   }
 
   async remove(id: string) {
-    const existingPosition =
-      await this.prisma.position.findUnique({
-        where: {
-          id,
-        },
-      });
+    const existingPosition = await this.prisma.position.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existingPosition) {
-      throw new NotFoundException(
-        'Jabatan tidak ditemukan',
-      );
+      throw new NotFoundException('Jabatan tidak ditemukan');
     }
 
     return this.prisma.position.delete({

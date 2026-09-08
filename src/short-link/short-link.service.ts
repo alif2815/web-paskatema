@@ -13,14 +13,10 @@ import { UpdateShortLinkDto } from './dto/update-short-link.dto';
 
 @Injectable()
 export class ShortLinkService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   private generateCode(): string {
-    return randomBytes(4)
-      .toString('base64url')
-      .slice(0, 6);
+    return randomBytes(4).toString('base64url').slice(0, 6);
   }
 
   private async generateUniqueCode() {
@@ -39,32 +35,23 @@ export class ShortLinkService {
     return code;
   }
 
-  async create(
-    createShortLinkDto: CreateShortLinkDto,
-  ) {
-    const {
-      originalUrl,
-      code: requestedCode,
-    } = createShortLinkDto;
+  async create(createShortLinkDto: CreateShortLinkDto) {
+    const { originalUrl, code: requestedCode } = createShortLinkDto;
 
     let code = requestedCode;
 
     if (code) {
-      const existing =
-        await this.prisma.shortLink.findUnique({
-          where: {
-            code,
-          },
-        });
+      const existing = await this.prisma.shortLink.findUnique({
+        where: {
+          code,
+        },
+      });
 
       if (existing) {
-        throw new ConflictException(
-          'Code short link sudah digunakan',
-        );
+        throw new ConflictException('Code short link sudah digunakan');
       }
     } else {
-      code =
-        await this.generateUniqueCode();
+      code = await this.generateUniqueCode();
     }
 
     return this.prisma.shortLink.create({
@@ -84,54 +71,39 @@ export class ShortLinkService {
   }
 
   async findOne(id: string) {
-    const shortLink =
-      await this.prisma.shortLink.findUnique({
-        where: {
-          id,
-        },
-      });
+    const shortLink = await this.prisma.shortLink.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!shortLink) {
-      throw new NotFoundException(
-        'Short link tidak ditemukan',
-      );
+      throw new NotFoundException('Short link tidak ditemukan');
     }
 
     return shortLink;
   }
 
-  async update(
-    id: string,
-    updateShortLinkDto: UpdateShortLinkDto,
-  ) {
-    const existing =
-      await this.prisma.shortLink.findUnique({
-        where: {
-          id,
-        },
-      });
+  async update(id: string, updateShortLinkDto: UpdateShortLinkDto) {
+    const existing = await this.prisma.shortLink.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Short link tidak ditemukan',
-      );
+      throw new NotFoundException('Short link tidak ditemukan');
     }
 
     if (updateShortLinkDto.code) {
-      const codeOwner =
-        await this.prisma.shortLink.findUnique({
-          where: {
-            code: updateShortLinkDto.code,
-          },
-        });
+      const codeOwner = await this.prisma.shortLink.findUnique({
+        where: {
+          code: updateShortLinkDto.code,
+        },
+      });
 
-      if (
-        codeOwner &&
-        codeOwner.id !== id
-      ) {
-        throw new ConflictException(
-          'Code short link sudah digunakan',
-        );
+      if (codeOwner && codeOwner.id !== id) {
+        throw new ConflictException('Code short link sudah digunakan');
       }
     }
 
@@ -140,13 +112,10 @@ export class ShortLinkService {
         id,
       },
       data: {
-        ...(updateShortLinkDto.originalUrl !==
-          undefined && {
-          originalUrl:
-            updateShortLinkDto.originalUrl,
+        ...(updateShortLinkDto.originalUrl !== undefined && {
+          originalUrl: updateShortLinkDto.originalUrl,
         }),
-        ...(updateShortLinkDto.code !==
-          undefined && {
+        ...(updateShortLinkDto.code !== undefined && {
           code: updateShortLinkDto.code,
         }),
       },
@@ -154,17 +123,14 @@ export class ShortLinkService {
   }
 
   async remove(id: string) {
-    const existing =
-      await this.prisma.shortLink.findUnique({
-        where: {
-          id,
-        },
-      });
+    const existing = await this.prisma.shortLink.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existing) {
-      throw new NotFoundException(
-        'Short link tidak ditemukan',
-      );
+      throw new NotFoundException('Short link tidak ditemukan');
     }
 
     return this.prisma.shortLink.delete({
@@ -175,30 +141,26 @@ export class ShortLinkService {
   }
 
   async redirect(code: string) {
-    const shortLink =
-      await this.prisma.shortLink.findUnique({
-        where: {
-          code,
-        },
-      });
+    const shortLink = await this.prisma.shortLink.findUnique({
+      where: {
+        code,
+      },
+    });
 
     if (!shortLink) {
-      throw new NotFoundException(
-        'Short link tidak ditemukan',
-      );
+      throw new NotFoundException('Short link tidak ditemukan');
     }
 
-    const updated =
-      await this.prisma.shortLink.update({
-        where: {
-          id: shortLink.id,
+    const updated = await this.prisma.shortLink.update({
+      where: {
+        id: shortLink.id,
+      },
+      data: {
+        clicks: {
+          increment: 1,
         },
-        data: {
-          clicks: {
-            increment: 1,
-          },
-        },
-      });
+      },
+    });
 
     return {
       originalUrl: updated.originalUrl,

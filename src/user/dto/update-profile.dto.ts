@@ -30,7 +30,8 @@ export class UpdateProfileDto {
   bio?: string;
 
   @ApiProperty({
-    description: 'ID media avatar (UUID dari tabel Media). Isi setelah upload via POST /user/me/avatar',
+    description:
+      'ID media avatar (UUID dari tabel Media). Isi setelah upload via POST /user/me/avatar',
     example: 'a1b2c3d4-e5f6-7890-abcd-ef1234567890',
     required: false,
   })

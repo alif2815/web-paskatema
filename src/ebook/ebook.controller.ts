@@ -9,10 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  ApiBearerAuth,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { EbookService } from './ebook.service';
 
@@ -24,19 +21,13 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('EBook')
 @Controller('ebook')
 export class EbookController {
-  constructor(
-    private readonly ebookService: EbookService,
-  ) {}
+  constructor(private readonly ebookService: EbookService) {}
 
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  create(
-    @Body() createEbookDto: CreateEbookDto,
-  ) {
-    return this.ebookService.create(
-      createEbookDto,
-    );
+  create(@Body() createEbookDto: CreateEbookDto) {
+    return this.ebookService.create(createEbookDto);
   }
 
   @Get()
@@ -52,14 +43,8 @@ export class EbookController {
   @Patch(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard)
-  update(
-    @Param('id') id: string,
-    @Body() updateEbookDto: UpdateEbookDto,
-  ) {
-    return this.ebookService.update(
-      id,
-      updateEbookDto,
-    );
+  update(@Param('id') id: string, @Body() updateEbookDto: UpdateEbookDto) {
+    return this.ebookService.update(id, updateEbookDto);
   }
 
   @Delete(':id')

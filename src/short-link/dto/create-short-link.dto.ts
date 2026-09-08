@@ -20,8 +20,7 @@ export class CreateShortLinkDto {
   @MinLength(4)
   @MaxLength(20)
   @Matches(/^[a-zA-Z0-9_-]+$/, {
-    message:
-      'Code hanya boleh mengandung huruf, angka, underscore, dan dash',
+    message: 'Code hanya boleh mengandung huruf, angka, underscore, dan dash',
   })
   code?: string;
 }

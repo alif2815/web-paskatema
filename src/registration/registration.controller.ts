@@ -32,10 +32,7 @@ export class RegistrationController {
    * User mendaftar ke Event/Oprec yang sedang dibuka.
    */
   @Post()
-  register(
-    @GetUser('id') userId: string,
-    @Body() dto: CreateRegistrationDto,
-  ) {
+  register(@GetUser('id') userId: string, @Body() dto: CreateRegistrationDto) {
     return this.registrationService.register(userId, dto);
   }
 
@@ -97,10 +94,7 @@ export class RegistrationController {
   @Patch(':id/status')
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)
-  updateStatus(
-    @Param('id') id: string,
-    @Body() dto: UpdateRegistrationDto,
-  ) {
+  updateStatus(@Param('id') id: string, @Body() dto: UpdateRegistrationDto) {
     return this.registrationService.updateStatus(id, dto);
   }
 

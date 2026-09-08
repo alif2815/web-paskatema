@@ -9,10 +9,7 @@ import {
   UseGuards,
 } from '@nestjs/common';
 
-import {
-  ApiBearerAuth,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiTags } from '@nestjs/swagger';
 
 import { StructureService } from './structure.service';
 
@@ -24,9 +21,7 @@ import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 @ApiTags('Structure')
 @Controller('structure')
 export class StructureController {
-  constructor(
-    private readonly structureService: StructureService,
-  ) {}
+  constructor(private readonly structureService: StructureService) {}
 
   @Post()
   @ApiBearerAuth()
@@ -35,9 +30,7 @@ export class StructureController {
     @Body()
     createStructureDto: CreateStructureDto,
   ) {
-    return this.structureService.create(
-      createStructureDto,
-    );
+    return this.structureService.create(createStructureDto);
   }
 
   @Get()
@@ -58,10 +51,7 @@ export class StructureController {
     @Body()
     updateStructureDto: UpdateStructureDto,
   ) {
-    return this.structureService.update(
-      id,
-      updateStructureDto,
-    );
+    return this.structureService.update(id, updateStructureDto);
   }
 
   @Delete(':id')

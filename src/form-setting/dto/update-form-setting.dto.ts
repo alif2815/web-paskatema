@@ -1,6 +1,4 @@
-import {
-  ApiPropertyOptional,
-} from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 
 import {
   ArrayMinSize,
@@ -13,10 +11,8 @@ import {
 
 export class UpdateFormSettingDto {
   @ApiPropertyOptional({
-    description:
-      'Judul form pendaftaran',
-    example:
-      'Pendaftaran Anggota PASKATEMA 2026/2027',
+    description: 'Judul form pendaftaran',
+    example: 'Pendaftaran Anggota PASKATEMA 2026/2027',
   })
   @IsString()
   @IsOptional()
@@ -31,8 +27,7 @@ export class UpdateFormSettingDto {
   isActive?: boolean;
 
   @ApiPropertyOptional({
-    description:
-      'Daftar pertanyaan/field dinamis pada form',
+    description: 'Daftar pertanyaan/field dinamis pada form',
     example: [
       {
         key: 'nama_lengkap',

@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -10,32 +7,21 @@ import { UpdateEventDto } from './dto/update-event.dto';
 
 @Injectable()
 export class EventService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) {}
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createEventDto: CreateEventDto) {
-    const {
-      title,
-      description,
-      date,
-      location,
-      posterId,
-    } = createEventDto;
+    const { title, description, date, location, posterId } = createEventDto;
 
     // Pastikan poster Media benar-benar ada
     if (posterId) {
-      const poster =
-        await this.prisma.media.findUnique({
-          where: {
-            id: posterId,
-          },
-        });
+      const poster = await this.prisma.media.findUnique({
+        where: {
+          id: posterId,
+        },
+      });
 
       if (!poster) {
-        throw new NotFoundException(
-          'Media poster tidak ditemukan',
-        );
+        throw new NotFoundException('Media poster tidak ditemukan');
       }
     }
 
@@ -97,63 +83,45 @@ export class EventService {
   }
 
   async findOne(id: string) {
-    const event =
-      await this.prisma.event.findUnique({
-        where: {
-          id,
-        },
-        include: {
-          poster: true,
-        },
-      });
+    const event = await this.prisma.event.findUnique({
+      where: {
+        id,
+      },
+      include: {
+        poster: true,
+      },
+    });
 
     if (!event) {
-      throw new NotFoundException(
-        'Event tidak ditemukan',
-      );
+      throw new NotFoundException('Event tidak ditemukan');
     }
 
     return event;
   }
 
-  async update(
-    id: string,
-    updateEventDto: UpdateEventDto,
-  ) {
-    const existingEvent =
-      await this.prisma.event.findUnique({
-        where: {
-          id,
-        },
-      });
+  async update(id: string, updateEventDto: UpdateEventDto) {
+    const existingEvent = await this.prisma.event.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existingEvent) {
-      throw new NotFoundException(
-        'Event tidak ditemukan',
-      );
+      throw new NotFoundException('Event tidak ditemukan');
     }
 
-    const {
-      title,
-      description,
-      date,
-      location,
-      posterId,
-    } = updateEventDto;
+    const { title, description, date, location, posterId } = updateEventDto;
 
     // Cek poster baru jika dikirim
     if (posterId) {
-      const poster =
-        await this.prisma.media.findUnique({
-          where: {
-            id: posterId,
-          },
-        });
+      const poster = await this.prisma.media.findUnique({
+        where: {
+          id: posterId,
+        },
+      });
 
       if (!poster) {
-        throw new NotFoundException(
-          'Media poster tidak ditemukan',
-        );
+        throw new NotFoundException('Media poster tidak ditemukan');
       }
     }
 
@@ -197,17 +165,14 @@ export class EventService {
   }
 
   async remove(id: string) {
-    const existingEvent =
-      await this.prisma.event.findUnique({
-        where: {
-          id,
-        },
-      });
+    const existingEvent = await this.prisma.event.findUnique({
+      where: {
+        id,
+      },
+    });
 
     if (!existingEvent) {
-      throw new NotFoundException(
-        'Event tidak ditemukan',
-      );
+      throw new NotFoundException('Event tidak ditemukan');
     }
 
     return this.prisma.event.delete({

@@ -13,10 +13,10 @@ import { UpdateRegistrationDto } from './dto/update-registration.dto';
 
 @Injectable()
 export class RegistrationService {
-  constructor(private readonly prisma: PrismaService) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   // ─────────────────────────────────────────────────────────────
-  // USER: Daftar ke Event/Oprec  
+  // USER: Daftar ke Event/Oprec
   // ─────────────────────────────────────────────────────────────
 
   /**
@@ -140,7 +140,9 @@ export class RegistrationService {
     });
 
     if (!registration) {
-      throw new NotFoundException(`Pendaftaran dengan id "${id}" tidak ditemukan`);
+      throw new NotFoundException(
+        `Pendaftaran dengan id "${id}" tidak ditemukan`,
+      );
     }
 
     return registration;

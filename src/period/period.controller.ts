@@ -9,11 +9,7 @@ import {
   Query,
   UseGuards,
 } from '@nestjs/common';
-import {
-  ApiBearerAuth,
-  ApiOperation,
-  ApiTags,
-} from '@nestjs/swagger';
+import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
 import { PeriodService } from './period.service';
@@ -40,7 +36,9 @@ export class PeriodController {
   }
 
   @Get()
-  @ApiOperation({ summary: 'Public: Lihat semua periode (bisa difilter isActive)' })
+  @ApiOperation({
+    summary: 'Public: Lihat semua periode (bisa difilter isActive)',
+  })
   findAll(@Query() query: QueryPeriodDto) {
     return this.periodService.findAll(query);
   }
@@ -62,10 +60,7 @@ export class PeriodController {
   @UseGuards(JwtAuthGuard, RolesGuard)
   @Roles(Role.ADMIN)
   @ApiOperation({ summary: 'Admin: Update periode' })
-  update(
-    @Param('id') id: string,
-    @Body() updatePeriodDto: UpdatePeriodDto,
-  ) {
+  update(@Param('id') id: string, @Body() updatePeriodDto: UpdatePeriodDto) {
     return this.periodService.update(id, updatePeriodDto);
   }
 

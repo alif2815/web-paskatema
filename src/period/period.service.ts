@@ -1,7 +1,4 @@
-import {
-  Injectable,
-  NotFoundException,
-} from '@nestjs/common';
+import { Injectable, NotFoundException } from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -11,9 +8,7 @@ import { QueryPeriodDto } from './dto/query-period.dto';
 
 @Injectable()
 export class PeriodService {
-  constructor(
-    private readonly prisma: PrismaService,
-  ) { }
+  constructor(private readonly prisma: PrismaService) {}
 
   async create(createPeriodDto: CreatePeriodDto) {
     const { name, isActive = false } = createPeriodDto;
