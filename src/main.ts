@@ -9,7 +9,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
-  app.useStaticAssets(join(__dirname, '..', 'uploads'), {
+  // Semua file di-upload ke folder relatif terhadap current working
+  // directory (lihat multer.config.ts, document-multer.config.ts,
+  // user.service.ts), BUKAN relatif terhadap __dirname (yang menunjuk ke
+  // dist/src saat production build). Pakai process.cwd() di sini supaya
+  // path yang di-serve selalu konsisten dengan path tempat file ditulis.
+  app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
   });
 
