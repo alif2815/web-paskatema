@@ -1,0 +1,47 @@
+services:
+  paskatema-api:
+    build:
+      context: .
+      dockerfile: Dockerfile
+    container_name: paskatema_api
+    restart: unless-stopped
+    env_file:
+      - .env
+    volumes:
+      # Persist file upload (avatar, cover berita, dokumen, dsb.) supaya
+      # tidak hilang tiap kali container di-rebuild/redeploy.
+      - ./uploads:/app/uploads
+    networks:
+      - proxy # network Traefik untuk routing publik
+      - postgresql-wsnb_default # network Postgres yang sudah jalan di VPS
+      - redis_public # network Redis yang sudah jalan di VPS
+    labels:
+      - "traefik.enable=true"
+      - "traefik.docker.network=proxy"
+
+      # --- HTTP router: cuma dipakai untuk redirect ke HTTPS ---
+      - "traefik.http.routers.paskatema-api-http.rule=Host(`paskatema.smktelkom-mlg.sch.id`)"
+      - "traefik.http.routers.paskatema-api-http.entrypoints=web"
+      - "traefik.http.routers.paskatema-api-http.middlewares=paskatema-api-https-redirect"
+      - "traefik.http.middlewares.paskatema-api-https-redirect.redirectscheme.scheme=https"
+
+      # --- HTTPS router ---
+      # PENTING: sesuaikan nama entrypoint & certresolver di 2 baris di
+      # bawah ini dengan konfigurasi Traefik yang sebenarnya di VPS Anda
+      # (cek docker-compose/label app lain yang sudah jalan di belakang
+      # Traefik yang sama, mis. ayosend/kirimhub, biar pasti konsisten).
+      - "traefik.http.routers.paskatema-api.rule=Host(`paskatema.smktelkom-mlg.sch.id`)"
+      - "traefik.http.routers.paskatema-api.entrypoints=websecure"
+      - "traefik.http.routers.paskatema-api.tls=true"
+      - "traefik.http.routers.paskatema-api.tls.certresolver=letsencrypt"
+
+      # Container app listen di port 3000 (lihat PORT di .env / main.ts)
+      - "traefik.http.services.paskatema-api.loadbalancer.server.port=3000"
+
+networks:
+  proxy:
+    external: true
+  postgresql-wsnb_default:
+    external: true
+  redis_public:
+    external: true
