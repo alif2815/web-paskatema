@@ -1,7 +1,14 @@
 import { Module } from '@nestjs/common';
-import { ConfigModule } from '@nestjs/config';
+import { APP_GUARD } from '@nestjs/core';
+import { ConfigModule, ConfigService } from '@nestjs/config';
+import { CacheModule } from '@nestjs/cache-manager';
+import { ThrottlerGuard, ThrottlerModule } from '@nestjs/throttler';
+import { ThrottlerStorageRedisService } from '@nest-lab/throttler-storage-redis';
+import { createKeyv } from '@keyv/redis';
+
 import { AppController } from './app.controller';
 import { AppService } from './app.service';
+import { buildRedisUrl } from './config/redis.util';
 import { AuthModule } from './auth/auth.module';
 import { UserModule } from './user/user.module';
 import { MediaModule } from './media/media.module';
@@ -34,12 +41,47 @@ function validateEnv(config: Record<string, unknown>) {
     );
   }
 
+  if (
+    typeof config.REDIS_HOST !== 'string' ||
+    config.REDIS_HOST.trim() === ''
+  ) {
+    throw new Error(
+      'REDIS_HOST wajib di-set sebagai environment variable. Redis dipakai ' +
+        'untuk cache response publik dan storage rate-limiting endpoint auth.',
+    );
+  }
+
   return config;
 }
 
 @Module({
   imports: [
     ConfigModule.forRoot({ isGlobal: true, validate: validateEnv }),
+    // Cache response GET publik (news/event/achievement/ebook/dll) di Redis
+    // supaya query DB berkurang untuk halaman yang sering diakses pengunjung.
+    // Endpoint yang di-cache ditandai eksplisit lewat @UseInterceptors(CacheInterceptor)
+    // per controller — module ini cuma menyediakan store-nya secara global.
+    CacheModule.registerAsync({
+      isGlobal: true,
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        stores: [createKeyv(buildRedisUrl(config))],
+        ttl: 60_000, // default 60 detik, endpoint tertentu bisa override via @CacheTTL()
+      }),
+    }),
+    // Rate-limiting berbasis Redis (bukan in-memory) supaya limit tetap
+    // konsisten walau backend di-scale jadi >1 instance. Baseline global
+    // dibuat longgar (120 req/menit); endpoint sensitif seperti login &
+    // register di-override lebih ketat lewat @Throttle() di controller-nya.
+    ThrottlerModule.forRootAsync({
+      imports: [ConfigModule],
+      inject: [ConfigService],
+      useFactory: (config: ConfigService) => ({
+        throttlers: [{ name: 'default', ttl: 60_000, limit: 120 }],
+        storage: new ThrottlerStorageRedisService(buildRedisUrl(config)),
+      }),
+    }),
     AuthModule,
     UserModule,
     MediaModule,
@@ -57,6 +99,6 @@ function validateEnv(config: Record<string, unknown>) {
     PrismaModule,
   ],
   controllers: [AppController],
-  providers: [AppService],
+  providers: [AppService, { provide: APP_GUARD, useClass: ThrottlerGuard }],
 })
 export class AppModule {}

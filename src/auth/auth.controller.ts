@@ -1,5 +1,6 @@
 import { Body, Controller, Get, Patch, Post, UseGuards } from '@nestjs/common';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
+import { Throttle } from '@nestjs/throttler';
 
 import { AuthService } from './auth.service';
 import { CreateAuthDto } from './dto/register.dto';
@@ -16,9 +17,11 @@ export class AuthController {
 
   // POST /auth/register
   @ApiOperation({
-    summary:
-      'Registrasi akun baru. Admin wajib menggunakan email @paskatema.com',
+    summary: 'Registrasi akun baru. Selalu membuat akun dengan role USER.',
   })
+  // Rate-limit lebih ketat dari baseline global (default 120/menit) untuk
+  // mencegah spam pendaftaran akun / enumerasi email lewat error "sudah terdaftar".
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('register')
   register(@Body() dto: CreateAuthDto) {
     return this.authService.register(dto);
@@ -26,6 +29,8 @@ export class AuthController {
 
   // POST /auth/login
   @ApiOperation({ summary: 'Login dan dapatkan JWT token' })
+  // Rate-limit lebih ketat untuk mencegah brute-force password.
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
   @Post('login')
   login(@Body() dto: LoginAuthDto) {
     return this.authService.login(dto);

@@ -8,7 +8,9 @@ import {
   Post,
   Query,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 import { ApiBearerAuth, ApiOperation, ApiTags } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
 
@@ -22,6 +24,8 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/get-user.decorators';
 
 @ApiTags('Period')
+@UseInterceptors(CacheInterceptor)
+@CacheTTL(60_000)
 @Controller('period')
 export class PeriodController {
   constructor(private readonly periodService: PeriodService) {}

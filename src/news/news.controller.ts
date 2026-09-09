@@ -7,7 +7,9 @@ import {
   Patch,
   Post,
   UseGuards,
+  UseInterceptors,
 } from '@nestjs/common';
+import { CacheInterceptor, CacheTTL } from '@nestjs/cache-manager';
 
 import { Role } from '@prisma/client';
 
@@ -20,6 +22,11 @@ import { NewsService } from './news.service';
 import { CreateNewsDto } from './dto/create-news.dto';
 import { UpdateNewsDto } from './dto/update-news.dto';
 
+// CacheInterceptor otomatis hanya aktif untuk request GET (method lain
+// dilewati apa adanya), jadi aman dipasang di level class walau di sini
+// juga ada route mutasi admin-only.
+@UseInterceptors(CacheInterceptor)
+@CacheTTL(60_000)
 @Controller('news')
 export class NewsController {
   constructor(private readonly newsService: NewsService) {}
