@@ -35,6 +35,7 @@ model User {
   candidates    Candidate[]
   registrations Registration[]
   newsWritten   News[]
+  transactionsRecorded Transaction[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -89,6 +90,8 @@ model Event {
   posterId    String?
   poster      Media?   @relation(fields: [posterId], references: [id], onDelete: SetNull)
 
+  transactions Transaction[]
+
   createdAt   DateTime @default(now())
   updatedAt   DateTime @updatedAt
 }
@@ -119,10 +122,11 @@ model Achievement {
 // ==========================================
 model Period {
   id            String         @id @default(uuid())
-  name          String         
+  name          String
   isActive      Boolean        @default(false)
   structures    Structure[]
   votingPeriods VotingPeriod[]
+  transactions  Transaction[]
 }
 
 model Position {
@@ -229,4 +233,33 @@ model ShortLink {
   clicks      Int      @default(0)
 
   createdAt   DateTime @default(now())
+}
+
+// ==========================================
+// 8. KEUANGAN (Pembukuan Kas)
+// ==========================================
+enum TransactionType {
+  INCOME
+  EXPENSE
+}
+
+model Transaction {
+  id          String          @id @default(uuid())
+  // Nominal dalam Rupiah, tanpa desimal (tidak ada pecahan sen di kas organisasi ini).
+  amount      Int
+  date        DateTime
+  type        TransactionType
+  description String          @db.Text
+
+  periodId    String?
+  period      Period?         @relation(fields: [periodId], references: [id], onDelete: SetNull)
+
+  eventId     String?
+  event       Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+
+  createdById String
+  createdBy   User            @relation(fields: [createdById], references: [id])
+
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
 }

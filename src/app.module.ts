@@ -24,6 +24,7 @@ import { AchievementModule } from './achievement/achievement.module';
 import { StructureModule } from './structure/structure.module';
 import { RegistrationModule } from './registration/registration.module';
 import { FormSettingModule } from './form-setting/form-setting.module';
+import { TransactionModule } from './transaction/transaction.module';
 
 /**
  * Validasi environment variable wajib saat startup. Gagal cepat (throw)
@@ -96,6 +97,7 @@ function validateEnv(config: Record<string, unknown>) {
     RegistrationModule,
     VotingModule,
     ShortLinkModule,
+    TransactionModule,
     PrismaModule,
   ],
   controllers: [AppController],
