@@ -65,11 +65,22 @@ export class TransactionService {
     if (query.dateFrom || query.dateTo) {
       where.date = {
         ...(query.dateFrom && { gte: new Date(query.dateFrom) }),
-        ...(query.dateTo && { lte: new Date(query.dateTo) }),
+        // `lt` hari berikutnya, BUKAN `lte` tanggal itu sendiri — dateTo
+        // biasanya cuma tanggal tanpa jam (mis. "2026-09-30"), yang di-parse
+        // jadi 00:00:00 UTC. Pakai `lte` akan salah membuang transaksi yang
+        // terjadi di sepanjang hari itu sendiri (kecuali persis jam 00:00:00).
+        ...(query.dateTo && { lt: this.dayAfter(query.dateTo) }),
       };
     }
 
     return where;
+  }
+
+  /** Tengah malam hari berikutnya dari tanggal yang diberikan (untuk filter `lt` yang benar-benar inklusif terhadap seluruh hari `dateTo`). */
+  private dayAfter(dateStr: string): Date {
+    const date = new Date(dateStr);
+    date.setUTCDate(date.getUTCDate() + 1);
+    return date;
   }
 
   async create(dto: CreateTransactionDto, createdById: string) {

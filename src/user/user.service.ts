@@ -1,5 +1,6 @@
 import {
   BadRequestException,
+  ConflictException,
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
@@ -263,8 +264,20 @@ export class UserService {
       }
     }
 
-    return this.prisma.user.delete({
-      where: { id },
-    });
+    try {
+      return await this.prisma.user.delete({
+        where: { id },
+      });
+    } catch (error) {
+      if (
+        error instanceof Prisma.PrismaClientKnownRequestError &&
+        error.code === 'P2003'
+      ) {
+        throw new ConflictException(
+          'User tidak dapat dihapus karena masih memiliki data terkait (mis. transaksi keuangan, berita, atau struktur organisasi yang tercatat atas namanya)',
+        );
+      }
+      throw error;
+    }
   }
 }
