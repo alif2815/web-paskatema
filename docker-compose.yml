@@ -11,6 +11,9 @@ services:
       # Persist file upload (avatar, cover berita, dokumen, dsb.) supaya
       # tidak hilang tiap kali container di-rebuild/redeploy.
       - ./uploads:/app/uploads
+      # Isi berita disimpan sebagai file .md di sini (content/news/<id>.md);
+      # wajib persist, dan ikut dibackup bersama database.
+      - ./content:/app/content
     networks:
       - proxy # network Traefik untuk routing publik
       - postgresql-wsnb_default # network Postgres yang sudah jalan di VPS

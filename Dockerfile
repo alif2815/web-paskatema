@@ -38,7 +38,7 @@ COPY --from=builder --chown=node:node /app/prisma.config.ts ./prisma.config.ts
 # Folder tempat file upload disimpan (lihat multer.config.ts,
 # document-multer.config.ts, user.service.ts) — di-mount sebagai volume
 # lewat docker-compose supaya persist antar deploy.
-RUN mkdir -p /app/uploads && chown node:node /app/uploads
+RUN mkdir -p /app/uploads /app/content && chown node:node /app/uploads /app/content
 
 USER node
 
