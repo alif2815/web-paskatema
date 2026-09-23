@@ -28,6 +28,7 @@ import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { GetUser, Roles } from '../auth/decorators/get-user.decorators';
+import { Public } from '../auth/decorators/public.decorator';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 
@@ -103,6 +104,21 @@ export class UserController {
     @UploadedFile() file: Express.Multer.File,
   ) {
     return this.userService.uploadAvatar(userId, file);
+  }
+
+  /**
+   * GET /user/public
+   * Direktori anggota untuk halaman publik /anggota — field non-sensitif
+   * saja (tanpa email/phone/bio/role akun). Diletakkan sebelum GET /:id
+   * supaya "public" tidak tertangkap sebagai parameter :id.
+   */
+  @ApiOperation({
+    summary: 'Public: Direktori anggota (nama, angkatan, jabatan aktif)',
+  })
+  @Public()
+  @Get('public')
+  findPublicDirectory() {
+    return this.userService.findPublicDirectory();
   }
 
   // ==========================================

@@ -86,6 +86,42 @@ export class UserService {
   }
 
   // ==========================================
+  // 1b. Direktori Anggota Publik (Halaman /anggota)
+  // ==========================================
+  /**
+   * Daftar anggota untuk ditampilkan publik — cuma field non-sensitif
+   * (tanpa email/phone/bio/role akun). Hanya anggota yang angkatan-nya
+   * sudah diisi admin yang muncul (mencegah akun yang belum diverifikasi
+   * admin ikut tampil). Jabatan diambil dari struktur di periode aktif,
+   * kalau ada.
+   */
+  async findPublicDirectory() {
+    const users = await this.prisma.user.findMany({
+      where: { angkatan: { not: null } },
+      select: {
+        id: true,
+        name: true,
+        angkatan: true,
+        avatar: { select: { url: true } },
+        structures: {
+          where: { period: { isActive: true } },
+          select: { position: { select: { name: true, level: true } } },
+          take: 1,
+        },
+      },
+      orderBy: [{ angkatan: 'desc' }, { name: 'asc' }],
+    });
+
+    return users.map((user) => ({
+      id: user.id,
+      name: user.name,
+      angkatan: user.angkatan,
+      avatarUrl: user.avatar?.url ?? null,
+      position: user.structures[0]?.position.name ?? null,
+    }));
+  }
+
+  // ==========================================
   // 2. Ambil profil berdasarkan ID
   // ==========================================
   async findById(id: string) {
