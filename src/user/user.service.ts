@@ -160,8 +160,10 @@ export class UserService {
     // Simpan file ke disk
     writeFileSync(filePath, file.buffer);
 
-    // URL yang bisa diakses publik
-    const fileUrl = `/uploads/avatars/${uniqueFileName}`;
+    // URL yang bisa diakses publik. Prefix /api wajib ada karena di domain
+    // publik, Traefik cuma meneruskan path yang diawali /api ke backend ini
+    // (lihat docker-compose.yml) — tanpa prefix ini URL-nya akan 404.
+    const fileUrl = `/api/uploads/avatars/${uniqueFileName}`;
 
     // Ambil data user lama untuk hapus avatar lama jika ada
     const existingUser = await this.prisma.user.findUnique({
@@ -195,10 +197,15 @@ export class UserService {
     // Hapus file lama dari disk jika ada dan bukan avatar default
     if (existingUser?.avatar?.url) {
       try {
-        const oldFilePath = join(
-          process.cwd(),
-          existingUser.avatar.url.replace(/^\//, ''),
+        // URL publik ("/api/uploads/...") berbeda dari path fisik di disk
+        // ("uploads/..." relatif terhadap cwd, tanpa prefix /api — lihat
+        // main.ts useStaticAssets). Ganti prefix URL-nya, bukan cuma
+        // buang leading slash, supaya path fisiknya benar.
+        const relativePath = existingUser.avatar.url.replace(
+          /^\/api\/uploads\//,
+          'uploads/',
         );
+        const oldFilePath = join(process.cwd(), relativePath);
         if (existsSync(oldFilePath)) {
           unlinkSync(oldFilePath);
         }

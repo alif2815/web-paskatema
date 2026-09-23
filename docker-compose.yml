@@ -19,18 +19,31 @@ services:
       - "traefik.enable=true"
       - "traefik.docker.network=proxy"
 
+      # Backend ini berbagi domain dengan frontend (paskatema-web): backend
+      # cuma menangani path yang diawali /api, sisanya (halaman website)
+      # ditangani frontend. Prefix /api di-strip sebelum sampai ke backend
+      # (rute internal NestJS tetap tanpa prefix, mis. /registrations),
+      # tapi tetap harus ditulis di URL manapun yang dikembalikan ke client
+      # (lihat main.ts, media.service.ts, user.service.ts).
+      - "traefik.http.middlewares.paskatema-api-stripprefix.stripprefix.prefixes=/api"
+
       # --- HTTP router: cuma dipakai untuk redirect ke HTTPS ---
       # Pakai middleware "redirect-https" yang sudah didefinisikan secara
       # global di Traefik VPS ini (dikonfirmasi lewat label app lain yang
       # sudah jalan, mis. ayosend-api) — tidak perlu didefinisikan ulang di sini.
-      - "traefik.http.routers.paskatema-api-http.rule=Host(`paskatema.smktelkom-mlg.sch.id`)"
+      - "traefik.http.routers.paskatema-api-http.rule=Host(`paskatema.smktelkom-mlg.sch.id`) && PathPrefix(`/api`)"
       - "traefik.http.routers.paskatema-api-http.entrypoints=web"
       - "traefik.http.routers.paskatema-api-http.middlewares=redirect-https"
+      - "traefik.http.routers.paskatema-api-http.priority=100"
 
       # --- HTTPS router ---
-      - "traefik.http.routers.paskatema-api.rule=Host(`paskatema.smktelkom-mlg.sch.id`)"
+      # Priority tinggi supaya rule path-prefix ini menang dibanding rule
+      # Host-only milik frontend (catch-all) untuk domain yang sama.
+      - "traefik.http.routers.paskatema-api.rule=Host(`paskatema.smktelkom-mlg.sch.id`) && PathPrefix(`/api`)"
       - "traefik.http.routers.paskatema-api.entrypoints=websecure"
       - "traefik.http.routers.paskatema-api.tls.certresolver=le"
+      - "traefik.http.routers.paskatema-api.priority=100"
+      - "traefik.http.routers.paskatema-api.middlewares=paskatema-api-stripprefix"
 
       # Container app listen di port 3000 (lihat PORT di .env / main.ts)
       - "traefik.http.services.paskatema-api.loadbalancer.server.port=3000"

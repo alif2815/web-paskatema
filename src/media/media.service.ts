@@ -10,7 +10,10 @@ export class MediaService {
       throw new Error('File wajib diupload');
     }
 
-    const url = `${baseUrl}/uploads/${file.filename}`;
+    // Prefix /api wajib ada karena di domain publik, Traefik cuma
+    // meneruskan path yang diawali /api ke backend ini (lihat
+    // docker-compose.yml) — tanpa prefix ini URL-nya akan 404.
+    const url = `${baseUrl}/api/uploads/${file.filename}`;
 
     return this.prisma.media.create({
       data: {

@@ -9,6 +9,12 @@ import { DocumentBuilder, SwaggerModule } from '@nestjs/swagger';
 async function bootstrap() {
   const app = await NestFactory.create<NestExpressApplication>(AppModule);
 
+  // Di belakang reverse proxy (Traefik), tanpa ini req.protocol selalu
+  // terbaca "http" (koneksi internal Traefik->container memang HTTP polos),
+  // padahal koneksi asli client ke Traefik sudah HTTPS. Wajib di-set supaya
+  // Express membaca X-Forwarded-Proto/X-Forwarded-For dari Traefik.
+  app.set('trust proxy', 1);
+
   // Semua file di-upload ke folder relatif terhadap current working
   // directory (lihat multer.config.ts, document-multer.config.ts,
   // user.service.ts), BUKAN relatif terhadap __dirname (yang menunjuk ke
@@ -27,7 +33,10 @@ async function bootstrap() {
 
   const document = SwaggerModule.createDocument(app, config);
 
-  SwaggerModule.setup('api', app, document);
+  // Dipasang di "docs" (bukan "api") karena "/api" di domain publik kini
+  // dipakai Traefik sebagai path-prefix untuk routing ke backend ini
+  // (lihat docker-compose.yml) — diakses publik lewat /api/docs.
+  SwaggerModule.setup('docs', app, document);
 
   app.useGlobalPipes(
     new ValidationPipe({
