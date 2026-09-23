@@ -148,6 +148,27 @@ export class UserController {
   }
 
   /**
+   * PATCH /user/:id
+   * Admin mengedit profil anggota mana pun (nama, phone, bio, angkatan,
+   * avatarId) — dipakai untuk mengelola data anggota per angkatan.
+   */
+  @ApiOperation({
+    summary: '[Admin] Update profil anggota (nama, phone, bio, angkatan)',
+  })
+  @ApiParam({ name: 'id', description: 'UUID user', example: 'a1b2c3d4-...' })
+  @ApiResponse({
+    status: 200,
+    description: 'Profil anggota berhasil diperbarui',
+  })
+  @ApiResponse({ status: 404, description: 'User tidak ditemukan' })
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch(':id')
+  updateAsAdmin(@Param('id') id: string, @Body() dto: UpdateProfileDto) {
+    return this.userService.updateProfile(id, dto);
+  }
+
+  /**
    * PATCH /user/:id/role
    * Mengubah role user (USER / ADMIN) — khusus Admin
    */

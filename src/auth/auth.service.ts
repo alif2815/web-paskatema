@@ -125,6 +125,7 @@ export class AuthService {
         role: true,
         phone: true,
         bio: true,
+        angkatan: true,
         createdAt: true,
         updatedAt: true,
       },

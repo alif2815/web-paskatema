@@ -25,6 +25,10 @@ model User {
   role      Role     @default(USER)
   phone     String?
   bio       String?  @db.Text
+  // Nomor angkatan/generasi anggota (mis. 32 = "Angkatan 32"), terpisah
+  // dari Period (periode kepengurusan) — berlaku untuk semua anggota,
+  // bukan hanya yang menjabat struktur organisasi.
+  angkatan  Int?
   avatarId  String?
   avatar    Media?   @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: SetNull)
 

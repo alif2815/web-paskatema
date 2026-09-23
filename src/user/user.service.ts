@@ -22,6 +22,7 @@ const USER_SAFE_SELECT = {
   role: true,
   phone: true,
   bio: true,
+  angkatan: true,
   avatarId: true,
   avatar: {
     select: {

@@ -1,5 +1,6 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsOptional, IsString, IsUUID } from 'class-validator';
+import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { Type } from 'class-transformer';
 
 export class UpdateProfileDto {
   @ApiProperty({
@@ -38,4 +39,15 @@ export class UpdateProfileDto {
   @IsUUID()
   @IsOptional()
   avatarId?: string;
+
+  @ApiProperty({
+    description: 'Nomor angkatan/generasi anggota',
+    example: 32,
+    required: false,
+  })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @IsOptional()
+  angkatan?: number;
 }
