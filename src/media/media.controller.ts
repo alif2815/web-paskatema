@@ -14,10 +14,12 @@ import { FileInterceptor } from '@nestjs/platform-express';
 
 import { ApiBearerAuth, ApiBody, ApiConsumes } from '@nestjs/swagger';
 import { Role } from '@prisma/client';
+import { Throttle } from '@nestjs/throttler';
 import { Request as ExpressRequest } from 'express';
 
 import { MediaService } from './media.service';
 import { documentMulterConfig } from './document-multer.config';
+import { multerConfig } from './multer.config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
 import { Roles } from '../auth/decorators/get-user.decorators';
@@ -28,6 +30,34 @@ type RequestWithUser = ExpressRequest & { user: AuthenticatedUser };
 @Controller('media')
 export class MediaController {
   constructor(private readonly mediaService: MediaService) {}
+
+  /**
+   * POST /media/upload
+   * Upload gambar (JPG/PNG/WEBP, maks 5MB). Untuk semua user yang login:
+   * anggota memakainya untuk foto galeri angkatan. Dibatasi rate-limit agar
+   * tidak dipakai mengisi disk.
+   */
+  @Post('upload')
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+      required: ['file'],
+    },
+  })
+  @Throttle({ default: { limit: 20, ttl: 60_000 } })
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file', multerConfig))
+  uploadImage(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() request: RequestWithUser,
+  ) {
+    const baseUrl = `${request.protocol}://${request.get('host')}`;
+
+    return this.mediaService.create(file, request.user.id, baseUrl);
+  }
 
   @Post('upload-document')
   @ApiBearerAuth()
@@ -57,6 +87,9 @@ export class MediaController {
   }
 
   @Get()
+  @ApiBearerAuth()
+  @UseGuards(JwtAuthGuard, RolesGuard)
+  @Roles(Role.ADMIN)
   findAll() {
     return this.mediaService.findAll();
   }

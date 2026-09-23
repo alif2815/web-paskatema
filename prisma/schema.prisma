@@ -34,6 +34,7 @@ model User {
 
   // Relasi
   mediaUploaded Media[]       @relation("UserUploads")
+  galleryPhotos GalleryPhoto[] @relation("GalleryUploader")
   structures    Structure[]
   votes         Vote[]
   candidates    Candidate[]
@@ -64,6 +65,7 @@ model Media {
   eBooks       EBook[]
   candidatePhotos Candidate[]
   structures  Structure[]
+  galleryPhotos GalleryPhoto[]
 
   createdAt    DateTime @default(now())
 }
@@ -119,6 +121,22 @@ model Achievement {
   image       Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
 
   createdAt   DateTime @default(now())
+}
+
+// Galeri foto publik, dikelompokkan per angkatan. Anggota boleh menambah
+// foto untuk angkatannya sendiri; admin untuk angkatan mana pun.
+model GalleryPhoto {
+  id         String   @id @default(uuid())
+  angkatan   Int
+  caption    String?
+  imageId    String
+  image      Media    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  uploaderId String?
+  uploader   User?    @relation("GalleryUploader", fields: [uploaderId], references: [id], onDelete: SetNull)
+
+  createdAt  DateTime @default(now())
+
+  @@index([angkatan])
 }
 
 // ==========================================
