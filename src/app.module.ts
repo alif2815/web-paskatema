@@ -22,6 +22,7 @@ import { ShortLinkModule } from './short-link/short-link.module';
 import { VotingModule } from './voting/voting.module';
 import { AchievementModule } from './achievement/achievement.module';
 import { GalleryModule } from './gallery/gallery.module';
+import { StorageModule } from './storage/storage.module';
 import { StructureModule } from './structure/structure.module';
 import { RegistrationModule } from './registration/registration.module';
 import { FormSettingModule } from './form-setting/form-setting.module';
@@ -84,6 +85,7 @@ function validateEnv(config: Record<string, unknown>) {
         storage: new ThrottlerStorageRedisService(buildRedisUrl(config)),
       }),
     }),
+    StorageModule,
     AuthModule,
     UserModule,
     MediaModule,

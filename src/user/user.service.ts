@@ -5,11 +5,10 @@ import {
   NotFoundException,
 } from '@nestjs/common';
 import { Prisma, Role } from '@prisma/client';
-import { join } from 'path';
-import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs';
 import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 import { UpdateProfileDto } from './dto/update-profile.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryUserDto } from './dto/query-user.dto';
@@ -43,7 +42,10 @@ const USER_SAFE_SELECT = {
 
 @Injectable()
 export class UserService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   // ==========================================
   // 1. Ambil semua user dengan filter & pagination (Khusus Admin)
@@ -189,26 +191,17 @@ export class UserService {
       throw new BadRequestException('Ukuran file maksimal 2MB');
     }
 
-    // Pastikan folder uploads/avatars ada
-    const uploadDir = join(process.cwd(), 'uploads', 'avatars');
-    if (!existsSync(uploadDir)) {
-      mkdirSync(uploadDir, { recursive: true });
-    }
+    // Nama unik; ekstensi dari mimetype yang sudah divalidasi, bukan dari nama
+    // file buatan client (cegah upload .html dsb. yang di-serve dari origin ini).
+    const baseName = `avatar-${userId}-${randomUUID()}`;
+    const extension = AVATAR_EXTENSIONS[file.mimetype];
 
-    // Generate nama file unik
-    // Ekstensi dari mimetype yang sudah divalidasi, bukan dari nama file
-    // buatan client (cegah upload .html dsb. yang di-serve dari origin ini).
-    const fileExt = AVATAR_EXTENSIONS[file.mimetype];
-    const uniqueFileName = `avatar-${userId}-${randomUUID()}${fileExt}`;
-    const filePath = join(uploadDir, uniqueFileName);
-
-    // Simpan file ke disk
-    writeFileSync(filePath, file.buffer);
-
-    // URL yang bisa diakses publik. Prefix /api wajib ada karena di domain
-    // publik, Traefik cuma meneruskan path yang diawali /api ke backend ini
-    // (lihat docker-compose.yml) — tanpa prefix ini URL-nya akan 404.
-    const fileUrl = `/api/uploads/avatars/${uniqueFileName}`;
+    // Simpan lewat StorageService: disk lokal, atau Cloudinary jika di-set.
+    const stored = await this.storage.saveBuffer(file.buffer, {
+      subfolder: 'avatars',
+      baseName,
+      extension,
+    });
 
     // Ambil data user lama untuk hapus avatar lama jika ada
     const existingUser = await this.prisma.user.findUnique({
@@ -217,56 +210,45 @@ export class UserService {
     });
 
     // Jalankan dalam transaksi: buat Media record + update User
-    const [, updatedUser] = await this.prisma.$transaction(async (tx) => {
-      // Buat record baru di tabel Media
-      const newMedia = await tx.media.create({
-        data: {
-          fileName: uniqueFileName,
-          url: fileUrl,
-          mimeType: file.mimetype,
-          size: file.size,
-          uploaderId: userId,
-        },
+    const [, updatedUser] = await this.prisma
+      .$transaction(async (tx) => {
+        const newMedia = await tx.media.create({
+          data: {
+            fileName: `${baseName}${extension}`,
+            url: stored.url,
+            publicId: stored.publicId,
+            mimeType: file.mimetype,
+            size: file.size,
+            uploaderId: userId,
+          },
+        });
+
+        const user = await tx.user.update({
+          where: { id: userId },
+          data: { avatarId: newMedia.id },
+          select: USER_SAFE_SELECT,
+        });
+
+        return [newMedia, user] as const;
+      })
+      .catch(async (error: unknown) => {
+        // Jangan tinggalkan file yatim jika transaksi gagal.
+        await this.storage.remove(stored);
+        throw error;
       });
 
-      // Update user dengan avatarId baru
-      const user = await tx.user.update({
-        where: { id: userId },
-        data: { avatarId: newMedia.id },
-        select: USER_SAFE_SELECT,
-      });
-
-      return [newMedia, user];
-    });
-
-    // Hapus file lama dari disk jika ada dan bukan avatar default
-    // Hanya hapus file hasil upload avatar user ini sendiri (nama file memuat
-    // userId). `avatarId` di PATCH /user/me bisa menunjuk media milik orang
-    // lain (mis. cover berita); file seperti itu tidak boleh ikut terhapus.
-    if (
-      existingUser?.avatar?.url &&
-      existingUser.avatar.url.includes(`/avatars/avatar-${userId}-`)
-    ) {
+    // Hapus avatar lama. Hanya yang hasil upload avatar user ini sendiri (nama
+    // memuat userId): `avatarId` di PATCH /user/me bisa menunjuk media milik
+    // orang lain (mis. cover berita), dan itu tidak boleh ikut terhapus.
+    const old = existingUser?.avatar;
+    if (old && (old.publicId ?? old.url).includes(`avatar-${userId}-`)) {
       try {
-        // URL publik ("/api/uploads/...") berbeda dari path fisik di disk
-        // ("uploads/..." relatif terhadap cwd, tanpa prefix /api — lihat
-        // main.ts useStaticAssets). Ganti prefix URL-nya, bukan cuma
-        // buang leading slash, supaya path fisiknya benar.
-        const relativePath = existingUser.avatar.url.replace(
-          /^\/api\/uploads\//,
-          'uploads/',
-        );
-        const oldFilePath = join(process.cwd(), relativePath);
         // Hapus record Media dulu; file baru dihapus jika DB berhasil, supaya
         // gagal-hapus-DB tidak meninggalkan record dengan file yang hilang.
-        await this.prisma.media.delete({
-          where: { id: existingUser.avatarId! },
-        });
-        if (existsSync(oldFilePath)) {
-          unlinkSync(oldFilePath);
-        }
+        await this.prisma.media.delete({ where: { id: old.id } });
+        await this.storage.remove(old);
       } catch {
-        // Lanjutkan meski gagal hapus file lama
+        // Lanjutkan meski gagal hapus avatar lama
       }
     }
 
@@ -323,20 +305,14 @@ export class UserService {
         where: { id },
       });
 
-      // Hapus file avatar dari disk hanya setelah user benar-benar terhapus.
-      // URL publik ("/api/uploads/...") ≠ path fisik ("uploads/...").
-      if (user.avatar?.url) {
-        try {
-          const oldFilePath = join(
-            process.cwd(),
-            user.avatar.url.replace(/^\/api\/uploads\//, 'uploads/'),
-          );
-          if (existsSync(oldFilePath)) {
-            unlinkSync(oldFilePath);
-          }
-        } catch {
-          // Lanjutkan meski gagal
-        }
+      // Hapus file avatar hanya setelah user benar-benar terhapus.
+      // Hanya avatar hasil upload user ini sendiri (bukan media bersama yang
+      // kebetulan dipilih sebagai avatar lewat avatarId).
+      if (
+        user.avatar &&
+        (user.avatar.publicId ?? user.avatar.url).includes(`avatar-${id}-`)
+      ) {
+        await this.storage.remove(user.avatar);
       }
 
       return deleted;

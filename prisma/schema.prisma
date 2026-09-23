@@ -55,6 +55,8 @@ model Media {
   url          String
   mimeType     String
   size         Int
+  // Public ID Cloudinary; null = disimpan lokal di uploads/.
+  publicId     String?
   uploaderId   String
   uploader     User     @relation("UserUploads", fields: [uploaderId], references: [id])
 

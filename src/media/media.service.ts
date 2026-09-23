@@ -1,9 +1,13 @@
 import { Injectable, NotFoundException } from '@nestjs/common';
 import { PrismaService } from '../prisma/prisma.service';
+import { StorageService } from '../storage/storage.service';
 
 @Injectable()
 export class MediaService {
-  constructor(private readonly prisma: PrismaService) {}
+  constructor(
+    private readonly prisma: PrismaService,
+    private readonly storage: StorageService,
+  ) {}
 
   async create(file: Express.Multer.File, uploaderId: string, baseUrl: string) {
     if (!file) {
@@ -13,17 +17,30 @@ export class MediaService {
     // Prefix /api wajib ada karena di domain publik, Traefik cuma
     // meneruskan path yang diawali /api ke backend ini (lihat
     // docker-compose.yml) — tanpa prefix ini URL-nya akan 404.
-    const url = `${baseUrl}/api/uploads/${file.filename}`;
+    // Gambar lewat StorageService (lokal atau Cloudinary); PDF selalu lokal.
+    const stored = file.mimetype.startsWith('image/')
+      ? await this.storage.saveDiskFile(file, baseUrl, 'media')
+      : {
+          url: `${baseUrl}/api/uploads/${file.filename}`,
+          publicId: null,
+        };
 
-    return this.prisma.media.create({
-      data: {
-        fileName: file.originalname,
-        url,
-        mimeType: file.mimetype,
-        size: file.size,
-        uploaderId,
-      },
-    });
+    try {
+      return await this.prisma.media.create({
+        data: {
+          fileName: file.originalname,
+          url: stored.url,
+          publicId: stored.publicId,
+          mimeType: file.mimetype,
+          size: file.size,
+          uploaderId,
+        },
+      });
+    } catch (error) {
+      // Jangan tinggalkan file yatim jika insert DB gagal.
+      await this.storage.remove(stored);
+      throw error;
+    }
   }
 
   async findAll() {
@@ -75,10 +92,14 @@ export class MediaService {
       throw new NotFoundException('Media tidak ditemukan');
     }
 
-    return this.prisma.media.delete({
+    const deleted = await this.prisma.media.delete({
       where: {
         id,
       },
     });
+
+    await this.storage.remove(media);
+
+    return deleted;
   }
 }
