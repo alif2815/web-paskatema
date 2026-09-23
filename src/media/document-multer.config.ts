@@ -1,6 +1,5 @@
 import { BadRequestException } from '@nestjs/common';
 import { diskStorage } from 'multer';
-import { extname } from 'path';
 import { randomUUID } from 'crypto';
 
 export const documentMulterConfig = {
@@ -12,9 +11,9 @@ export const documentMulterConfig = {
       file: Express.Multer.File,
       callback: (error: Error | null, filename: string) => void,
     ) => {
-      const extension = extname(file.originalname);
-
-      callback(null, `${randomUUID()}${extension}`);
+      // Ekstensi dipaksa .pdf (mimetype sudah divalidasi fileFilter), bukan
+      // diambil dari nama file client — cegah .html tersimpan & di-serve.
+      callback(null, `${randomUUID()}.pdf`);
     },
   }),
 

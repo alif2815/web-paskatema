@@ -69,18 +69,25 @@ export class TransactionService {
         // biasanya cuma tanggal tanpa jam (mis. "2026-09-30"), yang di-parse
         // jadi 00:00:00 UTC. Pakai `lte` akan salah membuang transaksi yang
         // terjadi di sepanjang hari itu sendiri (kecuali persis jam 00:00:00).
-        ...(query.dateTo && { lt: this.dayAfter(query.dateTo) }),
+        ...(query.dateTo && this.upperBound(query.dateTo)),
       };
     }
 
     return where;
   }
 
-  /** Tengah malam hari berikutnya dari tanggal yang diberikan (untuk filter `lt` yang benar-benar inklusif terhadap seluruh hari `dateTo`). */
-  private dayAfter(dateStr: string): Date {
+  /**
+   * Batas atas filter `dateTo`. Tanggal saja ("2026-09-30") berarti seluruh
+   * hari itu → `lt` tengah malam hari berikutnya. Jika ada komponen jam,
+   * hormati jam tersebut apa adanya (`lte`), jangan digeser satu hari penuh.
+   */
+  private upperBound(dateStr: string): { lt: Date } | { lte: Date } {
     const date = new Date(dateStr);
-    date.setUTCDate(date.getUTCDate() + 1);
-    return date;
+    if (/^\d{4}-\d{2}-\d{2}$/.test(dateStr)) {
+      date.setUTCDate(date.getUTCDate() + 1);
+      return { lt: date };
+    }
+    return { lte: date };
   }
 
   async create(dto: CreateTransactionDto, createdById: string) {
@@ -147,10 +154,12 @@ export class TransactionService {
     return this.prisma.transaction.update({
       where: { id },
       data: {
-        ...(dto.amount !== undefined && { amount: dto.amount }),
-        ...(dto.date !== undefined && { date: new Date(dto.date) }),
-        ...(dto.type !== undefined && { type: dto.type }),
-        ...(dto.description !== undefined && { description: dto.description }),
+        // `!= null` (bukan `!== undefined`): field wajib tidak boleh di-set
+        // null lewat PATCH ({"date":null} akan jadi 1970-01-01).
+        ...(dto.amount != null && { amount: dto.amount }),
+        ...(dto.date != null && { date: new Date(dto.date) }),
+        ...(dto.type != null && { type: dto.type }),
+        ...(dto.description != null && { description: dto.description }),
         ...(dto.periodId !== undefined && { periodId: dto.periodId }),
         ...(dto.eventId !== undefined && { eventId: dto.eventId }),
       },

@@ -24,7 +24,10 @@ import {
 import { Role } from '@prisma/client';
 
 import { UserService } from './user.service';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import {
+  UpdateOwnProfileDto,
+  UpdateProfileDto,
+} from './dto/update-profile.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 import { GetUser, Roles } from '../auth/decorators/get-user.decorators';
@@ -66,7 +69,10 @@ export class UserController {
   @ApiResponse({ status: 200, description: 'Profil berhasil diperbarui' })
   @ApiResponse({ status: 404, description: 'Media avatar tidak ditemukan' })
   @Patch('me')
-  updateProfile(@GetUser('id') userId: string, @Body() dto: UpdateProfileDto) {
+  updateProfile(
+    @GetUser('id') userId: string,
+    @Body() dto: UpdateOwnProfileDto,
+  ) {
     return this.userService.updateProfile(userId, dto);
   }
 
@@ -98,7 +104,9 @@ export class UserController {
     description: 'Format atau ukuran file tidak valid',
   })
   @Post('me/avatar')
-  @UseInterceptors(FileInterceptor('file'))
+  @UseInterceptors(
+    FileInterceptor('file', { limits: { fileSize: 2 * 1024 * 1024 } }),
+  )
   uploadAvatar(
     @GetUser('id') userId: string,
     @UploadedFile() file: Express.Multer.File,
@@ -195,8 +203,12 @@ export class UserController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Patch(':id/role')
-  updateRole(@Param('id') id: string, @Body() dto: UpdateRoleDto) {
-    return this.userService.updateRole(id, dto);
+  updateRole(
+    @Param('id') id: string,
+    @Body() dto: UpdateRoleDto,
+    @GetUser('id') currentUserId: string,
+  ) {
+    return this.userService.updateRole(id, dto, currentUserId);
   }
 
   /**
@@ -210,7 +222,7 @@ export class UserController {
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
   @Delete(':id')
-  remove(@Param('id') id: string) {
-    return this.userService.remove(id);
+  remove(@Param('id') id: string, @GetUser('id') currentUserId: string) {
+    return this.userService.remove(id, currentUserId);
   }
 }

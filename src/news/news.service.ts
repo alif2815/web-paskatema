@@ -90,7 +90,6 @@ export class NewsService {
           select: {
             id: true,
             name: true,
-            email: true,
           },
         },
 
@@ -129,7 +128,6 @@ export class NewsService {
           select: {
             id: true,
             name: true,
-            email: true,
           },
         },
 
@@ -228,7 +226,6 @@ export class NewsService {
             select: {
               id: true,
               name: true,
-              email: true,
             },
           },
 

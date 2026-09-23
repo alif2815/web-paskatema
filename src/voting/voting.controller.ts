@@ -17,6 +17,7 @@ import { VotingService } from './voting.service';
 import { CreateVotingDto } from './dto/create-voting.dto';
 import { UpdateVotingDto } from './dto/update-voting.dto';
 import { CreateCandidateDto } from './dto/create-candidate.dto';
+import { UpdateCandidateDto } from './dto/update-candidate.dto';
 import { CastVoteDto } from './dto/cast-vote.dto';
 
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
@@ -105,7 +106,7 @@ export class VotingController {
     @Param('votingId') votingId: string,
     @Param('candidateId') candidateId: string,
     @Body()
-    updateData: Partial<CreateCandidateDto>,
+    updateData: UpdateCandidateDto,
   ) {
     return this.votingService.updateCandidate(
       votingId,

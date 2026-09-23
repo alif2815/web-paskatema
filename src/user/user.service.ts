@@ -4,8 +4,8 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma } from '@prisma/client';
-import { extname, join } from 'path';
+import { Prisma, Role } from '@prisma/client';
+import { join } from 'path';
 import { existsSync, mkdirSync, unlinkSync, writeFileSync } from 'fs';
 import { randomUUID } from 'crypto';
 
@@ -15,6 +15,12 @@ import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 
 /** Field user yang aman dikembalikan ke client (tanpa password) */
+const AVATAR_EXTENSIONS: Record<string, string> = {
+  'image/jpeg': '.jpg',
+  'image/png': '.png',
+  'image/webp': '.webp',
+};
+
 const USER_SAFE_SELECT = {
   id: true,
   email: true,
@@ -56,8 +62,8 @@ export class UserService {
     // Search berdasarkan nama ATAU email (case-insensitive)
     if (search) {
       where.OR = [
-        { name: { contains: search } },
-        { email: { contains: search } },
+        { name: { contains: search, mode: 'insensitive' } },
+        { email: { contains: search, mode: 'insensitive' } },
       ];
     }
 
@@ -190,7 +196,9 @@ export class UserService {
     }
 
     // Generate nama file unik
-    const fileExt = extname(file.originalname);
+    // Ekstensi dari mimetype yang sudah divalidasi, bukan dari nama file
+    // buatan client (cegah upload .html dsb. yang di-serve dari origin ini).
+    const fileExt = AVATAR_EXTENSIONS[file.mimetype];
     const uniqueFileName = `avatar-${userId}-${randomUUID()}${fileExt}`;
     const filePath = join(uploadDir, uniqueFileName);
 
@@ -232,7 +240,13 @@ export class UserService {
     });
 
     // Hapus file lama dari disk jika ada dan bukan avatar default
-    if (existingUser?.avatar?.url) {
+    // Hanya hapus file hasil upload avatar user ini sendiri (nama file memuat
+    // userId). `avatarId` di PATCH /user/me bisa menunjuk media milik orang
+    // lain (mis. cover berita); file seperti itu tidak boleh ikut terhapus.
+    if (
+      existingUser?.avatar?.url &&
+      existingUser.avatar.url.includes(`/avatars/avatar-${userId}-`)
+    ) {
       try {
         // URL publik ("/api/uploads/...") berbeda dari path fisik di disk
         // ("uploads/..." relatif terhadap cwd, tanpa prefix /api — lihat
@@ -243,13 +257,14 @@ export class UserService {
           'uploads/',
         );
         const oldFilePath = join(process.cwd(), relativePath);
-        if (existsSync(oldFilePath)) {
-          unlinkSync(oldFilePath);
-        }
-        // Hapus record Media lama
+        // Hapus record Media dulu; file baru dihapus jika DB berhasil, supaya
+        // gagal-hapus-DB tidak meninggalkan record dengan file yang hilang.
         await this.prisma.media.delete({
           where: { id: existingUser.avatarId! },
         });
+        if (existsSync(oldFilePath)) {
+          unlinkSync(oldFilePath);
+        }
       } catch {
         // Lanjutkan meski gagal hapus file lama
       }
@@ -264,8 +279,14 @@ export class UserService {
   // ==========================================
   // 5. Update Role User (Khusus Admin)
   // ==========================================
-  async updateRole(id: string, dto: UpdateRoleDto) {
+  async updateRole(id: string, dto: UpdateRoleDto, currentUserId: string) {
     await this.findById(id); // Pastikan user ada
+
+    // Cegah admin menurunkan role dirinya sendiri — jika satu-satunya admin
+    // melakukannya, tidak ada lagi yang bisa mengelola sistem.
+    if (id === currentUserId && dto.role !== Role.ADMIN) {
+      throw new BadRequestException('Tidak dapat menurunkan role akun sendiri');
+    }
 
     return this.prisma.user.update({
       where: { id },
@@ -283,7 +304,11 @@ export class UserService {
   // ==========================================
   // 6. Hapus User (Khusus Admin)
   // ==========================================
-  async remove(id: string) {
+  async remove(id: string, currentUserId: string) {
+    if (id === currentUserId) {
+      throw new BadRequestException('Tidak dapat menghapus akun sendiri');
+    }
+
     const user = await this.prisma.user.findUnique({
       where: { id },
       include: { avatar: true },
@@ -293,25 +318,28 @@ export class UserService {
       throw new NotFoundException('Pengguna tidak ditemukan');
     }
 
-    // Hapus file avatar dari disk jika ada
-    if (user.avatar?.url) {
-      try {
-        const oldFilePath = join(
-          process.cwd(),
-          user.avatar.url.replace(/^\//, ''),
-        );
-        if (existsSync(oldFilePath)) {
-          unlinkSync(oldFilePath);
-        }
-      } catch {
-        // Lanjutkan meski gagal
-      }
-    }
-
     try {
-      return await this.prisma.user.delete({
+      const deleted = await this.prisma.user.delete({
         where: { id },
       });
+
+      // Hapus file avatar dari disk hanya setelah user benar-benar terhapus.
+      // URL publik ("/api/uploads/...") ≠ path fisik ("uploads/...").
+      if (user.avatar?.url) {
+        try {
+          const oldFilePath = join(
+            process.cwd(),
+            user.avatar.url.replace(/^\/api\/uploads\//, 'uploads/'),
+          );
+          if (existsSync(oldFilePath)) {
+            unlinkSync(oldFilePath);
+          }
+        } catch {
+          // Lanjutkan meski gagal
+        }
+      }
+
+      return deleted;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&

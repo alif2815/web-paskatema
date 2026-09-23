@@ -44,7 +44,8 @@ export class MediaController {
       required: ['file'],
     },
   })
-  @UseGuards(JwtAuthGuard)
+  @Roles(Role.ADMIN)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   @UseInterceptors(FileInterceptor('file', documentMulterConfig))
   uploadDocument(
     @UploadedFile() file: Express.Multer.File,

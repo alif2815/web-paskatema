@@ -3,6 +3,7 @@ import {
   Controller,
   Delete,
   Get,
+  ParseEnumPipe,
   Param,
   Patch,
   Post,
@@ -71,7 +72,8 @@ export class RegistrationController {
   @UseGuards(RolesGuard)
   findAll(
     @Query('formId') formId?: string,
-    @Query('status') status?: StatusReg,
+    @Query('status', new ParseEnumPipe(StatusReg, { optional: true }))
+    status?: StatusReg,
   ) {
     return this.registrationService.findAll({ formId, status });
   }

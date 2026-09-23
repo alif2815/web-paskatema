@@ -1,5 +1,5 @@
-import { ApiProperty } from '@nestjs/swagger';
-import { IsInt, IsOptional, IsString, IsUUID, Min } from 'class-validator';
+import { ApiProperty, OmitType } from '@nestjs/swagger';
+import { IsInt, IsOptional, IsString, IsUUID, Max, Min } from 'class-validator';
 import { Type } from 'class-transformer';
 
 export class UpdateProfileDto {
@@ -48,6 +48,16 @@ export class UpdateProfileDto {
   @Type(() => Number)
   @IsInt()
   @Min(1)
+  @Max(999)
   @IsOptional()
   angkatan?: number;
 }
+
+/**
+ * Profil yang boleh diubah user sendiri (PATCH /user/me). `angkatan` sengaja
+ * dikecualikan: field itu menentukan siapa yang tampil di direktori publik
+ * /anggota, jadi hanya admin (PATCH /user/:id) yang boleh mengubahnya.
+ */
+export class UpdateOwnProfileDto extends OmitType(UpdateProfileDto, [
+  'angkatan',
+] as const) {}

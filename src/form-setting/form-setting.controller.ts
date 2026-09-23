@@ -24,6 +24,7 @@ import { FormSettingService } from './form-setting.service';
 import { CreateFormSettingDto } from './dto/create-form-setting.dto';
 
 import { UpdateFormSettingDto } from './dto/update-form-setting.dto';
+import { ToggleFormStatusDto } from './dto/toggle-form-status.dto';
 
 @ApiTags('Form Setting')
 @UseGuards(JwtAuthGuard)
@@ -87,12 +88,8 @@ export class FormSettingController {
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
   @UseGuards(RolesGuard)
-  toggleStatus(
-    @Param('id') id: string,
-    @Body('isActive')
-    isActive: boolean,
-  ) {
-    return this.formSettingService.toggleFormStatus(id, isActive);
+  toggleStatus(@Param('id') id: string, @Body() dto: ToggleFormStatusDto) {
+    return this.formSettingService.toggleFormStatus(id, dto.isActive);
   }
 
   @Delete(':id')

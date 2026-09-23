@@ -11,6 +11,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreateVotingDto } from './dto/create-voting.dto';
 import { UpdateVotingDto } from './dto/update-voting.dto';
 import { CreateCandidateDto } from './dto/create-candidate.dto';
+import { UpdateCandidateDto } from './dto/update-candidate.dto';
 import { CastVoteDto } from './dto/cast-vote.dto';
 
 @Injectable()
@@ -134,7 +135,6 @@ export class VotingService {
               select: {
                 id: true,
                 name: true,
-                email: true,
               },
             },
             photo: true,
@@ -321,7 +321,6 @@ export class VotingService {
           select: {
             id: true,
             name: true,
-            email: true,
           },
         },
         photo: true,
@@ -372,7 +371,6 @@ export class VotingService {
           select: {
             id: true,
             name: true,
-            email: true,
           },
         },
         photo: true,
@@ -389,23 +387,11 @@ export class VotingService {
   async updateCandidate(
     votingId: string,
     candidateId: string,
-    updateData: Partial<CreateCandidateDto>,
+    updateData: UpdateCandidateDto,
   ) {
     await this.findCandidate(votingId, candidateId);
 
-    const { userId, vision, mission, photoId } = updateData;
-
-    if (userId) {
-      const user = await this.prisma.user.findUnique({
-        where: {
-          id: userId,
-        },
-      });
-
-      if (!user) {
-        throw new NotFoundException('User calon tidak ditemukan');
-      }
-    }
+    const { vision, mission, photoId } = updateData;
 
     if (photoId) {
       const photo = await this.prisma.media.findUnique({
@@ -424,9 +410,6 @@ export class VotingService {
         id: candidateId,
       },
       data: {
-        ...(userId !== undefined && {
-          userId,
-        }),
         ...(vision !== undefined && {
           vision,
         }),
@@ -442,7 +425,6 @@ export class VotingService {
           select: {
             id: true,
             name: true,
-            email: true,
           },
         },
         photo: true,

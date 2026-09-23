@@ -1,6 +1,7 @@
 import { NestFactory } from '@nestjs/core';
 import { NestExpressApplication } from '@nestjs/platform-express';
 import { join } from 'path';
+import type { Response } from 'express';
 
 import { AppModule } from './app.module';
 import { ValidationPipe } from '@nestjs/common';
@@ -22,6 +23,10 @@ async function bootstrap() {
   // path yang di-serve selalu konsisten dengan path tempat file ditulis.
   app.useStaticAssets(join(process.cwd(), 'uploads'), {
     prefix: '/uploads/',
+    // Cegah browser menebak tipe konten file upload (mis. jalankan sebagai HTML).
+    setHeaders: (res: Response) => {
+      res.setHeader('X-Content-Type-Options', 'nosniff');
+    },
   });
 
   const config = new DocumentBuilder()

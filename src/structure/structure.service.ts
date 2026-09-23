@@ -19,9 +19,6 @@ export class StructureService {
       select: {
         id: true,
         name: true,
-        email: true,
-        phone: true,
-        bio: true,
       },
     },
     position: true,
