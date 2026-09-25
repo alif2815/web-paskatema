@@ -27,7 +27,6 @@ import { UpdateFormSettingDto } from './dto/update-form-setting.dto';
 import { ToggleFormStatusDto } from './dto/toggle-form-status.dto';
 
 @ApiTags('Form Setting')
-@UseGuards(JwtAuthGuard)
 @Controller('form-setting')
 export class FormSettingController {
   constructor(private readonly formSettingService: FormSettingService) {}
@@ -36,6 +35,8 @@ export class FormSettingController {
   // PUBLIC / AUTH USER
   // ==========================================================
 
+  // Publik: halaman /pendaftaran menampilkan pertanyaan sebelum login;
+  // mengirim jawaban tetap wajib login (lihat registration).
   @Get('active')
   findActive() {
     return this.formSettingService.findActive();
@@ -48,7 +49,7 @@ export class FormSettingController {
   @Post()
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   create(
     @Body()
     dto: CreateFormSettingDto,
@@ -59,7 +60,7 @@ export class FormSettingController {
   @Get()
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   findAll() {
     return this.formSettingService.findAll();
   }
@@ -67,7 +68,7 @@ export class FormSettingController {
   @Get(':id')
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   findOne(@Param('id') id: string) {
     return this.formSettingService.findOne(id);
   }
@@ -75,7 +76,7 @@ export class FormSettingController {
   @Patch(':id')
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   update(
     @Param('id') id: string,
     @Body()
@@ -87,7 +88,7 @@ export class FormSettingController {
   @Patch(':id/status')
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   toggleStatus(@Param('id') id: string, @Body() dto: ToggleFormStatusDto) {
     return this.formSettingService.toggleFormStatus(id, dto.isActive);
   }
@@ -95,7 +96,7 @@ export class FormSettingController {
   @Delete(':id')
   @ApiBearerAuth()
   @Roles(Role.ADMIN)
-  @UseGuards(RolesGuard)
+  @UseGuards(JwtAuthGuard, RolesGuard)
   remove(@Param('id') id: string) {
     return this.formSettingService.remove(id);
   }

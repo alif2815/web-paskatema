@@ -10,13 +10,15 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { CreateFormSettingDto } from './dto/create-form-setting.dto';
 import { UpdateFormSettingDto } from './dto/update-form-setting.dto';
+import { parseFormSchema } from './form-schema';
 
 @Injectable()
 export class FormSettingService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(dto: CreateFormSettingDto) {
-    const { title, isActive = false, schema } = dto;
+    const { title, isActive = false } = dto;
+    const schema = parseFormSchema(dto.schema);
 
     return this.prisma.$transaction(async (tx) => {
       // Hanya satu form yang boleh aktif.
@@ -35,7 +37,7 @@ export class FormSettingService {
         data: {
           title,
           isActive,
-          schema: schema as Prisma.InputJsonValue,
+          schema: schema as unknown as Prisma.InputJsonValue,
         },
       });
     });
@@ -151,7 +153,9 @@ export class FormSettingService {
           }),
 
           ...(dto.schema !== undefined && {
-            schema: dto.schema as Prisma.InputJsonValue,
+            schema: parseFormSchema(
+              dto.schema,
+            ) as unknown as Prisma.InputJsonValue,
           }),
         },
       });

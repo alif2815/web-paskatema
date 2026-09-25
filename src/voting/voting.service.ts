@@ -471,6 +471,18 @@ export class VotingService {
       throw new ForbiddenException('Voting sedang tidak aktif');
     }
 
+    // Hanya anggota yang angkatannya sudah diisi admin yang boleh memilih,
+    // supaya akun baru/asing tidak bisa ikut menentukan hasil.
+    const voter = await this.prisma.user.findUnique({
+      where: { id: voterId },
+      select: { angkatan: true },
+    });
+    if (voter?.angkatan == null) {
+      throw new ForbiddenException(
+        'Hanya anggota yang angkatannya sudah diisi admin yang dapat memilih',
+      );
+    }
+
     const candidate = await this.prisma.candidate.findFirst({
       where: {
         id: castVoteDto.candidateId,

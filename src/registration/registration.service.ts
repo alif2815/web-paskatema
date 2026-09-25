@@ -5,11 +5,12 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, StatusReg } from '@prisma/client';
+import { StatusReg } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { CreateRegistrationDto } from './dto/create-registration.dto';
 import { UpdateRegistrationDto } from './dto/update-registration.dto';
+import { validateAnswers } from '../form-setting/form-schema';
 
 @Injectable()
 export class RegistrationService {
@@ -52,12 +53,16 @@ export class RegistrationService {
       );
     }
 
-    // 3. Simpan pendaftaran
+    // 3. Jawaban harus sesuai schema form (wajib diisi, pilihan valid, dsb.);
+    //    key di luar schema dibuang.
+    const answers = validateAnswers(form.schema, dto.answers);
+
+    // 4. Simpan pendaftaran
     return this.prisma.registration.create({
       data: {
         userId,
         formId: dto.formId,
-        answers: dto.answers as unknown as Prisma.InputJsonValue,
+        answers,
         status: StatusReg.PENDING,
       },
       include: {

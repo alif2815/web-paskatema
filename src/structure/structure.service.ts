@@ -19,6 +19,8 @@ export class StructureService {
       select: {
         id: true,
         name: true,
+        angkatan: true,
+        avatar: { select: { url: true } },
       },
     },
     position: true,
