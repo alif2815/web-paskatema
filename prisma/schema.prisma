@@ -21,29 +21,31 @@ enum Role {
 }
 
 model User {
-  id        String   @id @default(uuid())
-  email     String   @unique
-  password  String
-  name      String
-  role      Role     @default(USER)
-  phone     String?
-  bio       String?  @db.Text
+  id       String  @id @default(uuid())
+  email    String  @unique
+  password String
+  name     String
+  role     Role    @default(USER)
+  phone    String?
+  bio      String? @db.Text
   // Nomor angkatan/generasi anggota (mis. 32 = "Angkatan 32"), terpisah
   // dari Period (periode kepengurusan) — berlaku untuk semua anggota,
   // bukan hanya yang menjabat struktur organisasi.
-  angkatan  Int?
-  avatarId  String?
-  avatar    Media?   @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: SetNull)
+  angkatan Int?
+  avatarId String?
+  avatar   Media?  @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: SetNull)
 
   // Relasi
-  mediaUploaded Media[]       @relation("UserUploads")
-  galleryPhotos GalleryPhoto[] @relation("GalleryUploader")
-  structures    Structure[]
-  votes         Vote[]
-  candidates    Candidate[]
-  registrations Registration[]
-  newsWritten   News[]
+  mediaUploaded        Media[]        @relation("UserUploads")
+  galleryPhotos        GalleryPhoto[] @relation("GalleryUploader")
+  structures           Structure[]
+  votes                Vote[]
+  candidates           Candidate[]
+  registrations        Registration[]
+  newsWritten          News[]
   transactionsRecorded Transaction[]
+  forumThreads         ForumThread[]
+  forumPosts           ForumPost[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -53,43 +55,43 @@ model User {
 // 2. MEDIA (Penyimpanan File Terpusat)
 // ==========================================
 model Media {
-  id           String   @id @default(uuid())
-  fileName     String
-  url          String
-  mimeType     String
-  size         Int
+  id         String  @id @default(uuid())
+  fileName   String
+  url        String
+  mimeType   String
+  size       Int
   // Public ID Cloudinary; null = disimpan lokal di uploads/.
-  publicId     String?
-  uploaderId   String
-  uploader     User     @relation("UserUploads", fields: [uploaderId], references: [id])
+  publicId   String?
+  uploaderId String
+  uploader   User    @relation("UserUploads", fields: [uploaderId], references: [id])
 
-  userAvatars  User[]   @relation("UserAvatar")
-  newsCovers   News[]
-  eventPosters Event[]
-  achievements Achievement[]
-  eBooks       EBook[]
+  userAvatars     User[]         @relation("UserAvatar")
+  newsCovers      News[]
+  eventPosters    Event[]
+  achievements    Achievement[]
+  eBooks          EBook[]
   candidatePhotos Candidate[]
-  structures  Structure[]
-  galleryPhotos GalleryPhoto[]
+  structures      Structure[]
+  galleryPhotos   GalleryPhoto[]
 
-  createdAt    DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 // ==========================================
 // 3. KONTEN (Berita, Event, E-Book, Prestasi)
 // ==========================================
 model News {
-  id        String   @id @default(uuid())
-  title     String
-  slug      String   @unique
+  id       String  @id @default(uuid())
+  title    String
+  slug     String  @unique
   // Isi berita disimpan sebagai file Markdown (content/news/<id>.md), path-nya
   // di filePath. `content` hanya untuk berita lama sebelum dimigrasikan.
-  content   String?  @db.Text
-  filePath  String?
-  authorId  String
-  author    User     @relation(fields: [authorId], references: [id])
-  coverId   String?
-  cover     Media?   @relation(fields: [coverId], references: [id], onDelete: SetNull)
+  content  String? @db.Text
+  filePath String?
+  authorId String
+  author   User    @relation(fields: [authorId], references: [id])
+  coverId  String?
+  cover    Media?  @relation(fields: [coverId], references: [id], onDelete: SetNull)
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -106,43 +108,43 @@ model Event {
 
   transactions Transaction[]
 
-  createdAt   DateTime @default(now())
-  updatedAt   DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model EBook {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   title       String
-  description String?  @db.Text
+  description String? @db.Text
   fileId      String
-  file        Media    @relation(fields: [fileId], references: [id])
+  file        Media   @relation(fields: [fileId], references: [id])
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 model Achievement {
-  id          String   @id @default(uuid())
+  id          String  @id @default(uuid())
   title       String
   year        Int
-  description String?  @db.Text
+  description String? @db.Text
   imageId     String?
-  image       Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  image       Media?  @relation(fields: [imageId], references: [id], onDelete: SetNull)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 // Galeri foto publik, dikelompokkan per angkatan. Anggota boleh menambah
 // foto untuk angkatannya sendiri; admin untuk angkatan mana pun.
 model GalleryPhoto {
-  id         String   @id @default(uuid())
+  id         String  @id @default(uuid())
   angkatan   Int
   caption    String?
   imageId    String
-  image      Media    @relation(fields: [imageId], references: [id], onDelete: Cascade)
+  image      Media   @relation(fields: [imageId], references: [id], onDelete: Cascade)
   uploaderId String?
-  uploader   User?    @relation("GalleryUploader", fields: [uploaderId], references: [id], onDelete: SetNull)
+  uploader   User?   @relation("GalleryUploader", fields: [uploaderId], references: [id], onDelete: SetNull)
 
-  createdAt  DateTime @default(now())
+  createdAt DateTime @default(now())
 
   @@index([angkatan])
 }
@@ -160,24 +162,24 @@ model Period {
 }
 
 model Position {
-  id          String      @id @default(uuid())
-  name        String      
-  level       Int         
-  structures  Structure[]
+  id         String      @id @default(uuid())
+  name       String
+  level      Int
+  structures Structure[]
 }
 
 model Structure {
-  id          String   @id @default(uuid())
-  userId      String
-  user        User     @relation(fields: [userId], references: [id])
-  positionId  String
-  position    Position @relation(fields: [positionId], references: [id])
-  periodId    String
-  period      Period   @relation(fields: [periodId], references: [id])
-  imageId     String?
-  image       Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
+  id         String   @id @default(uuid())
+  userId     String
+  user       User     @relation(fields: [userId], references: [id])
+  positionId String
+  position   Position @relation(fields: [positionId], references: [id])
+  periodId   String
+  period     Period   @relation(fields: [periodId], references: [id])
+  imageId    String?
+  image      Media?   @relation(fields: [imageId], references: [id], onDelete: SetNull)
 
-  @@unique([userId, periodId]) 
+  @@unique([userId, periodId])
 }
 
 // ==========================================
@@ -187,23 +189,23 @@ model FormSetting {
   id            String         @id @default(uuid())
   title         String
   isActive      Boolean        @default(false)
-  schema        Json           
+  schema        Json
   registrations Registration[]
 
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }
 
 model Registration {
-  id          String      @id @default(uuid())
-  userId      String
-  user        User        @relation(fields: [userId], references: [id])
-  formId      String
-  form        FormSetting @relation(fields: [formId], references: [id])
-  answers     Json        
-  status      StatusReg   @default(PENDING)
+  id      String      @id @default(uuid())
+  userId  String
+  user    User        @relation(fields: [userId], references: [id])
+  formId  String
+  form    FormSetting @relation(fields: [formId], references: [id])
+  answers Json
+  status  StatusReg   @default(PENDING)
 
-  createdAt   DateTime    @default(now())
+  createdAt DateTime @default(now())
 }
 
 enum StatusReg {
@@ -216,13 +218,13 @@ enum StatusReg {
 // 6. SISTEM VOTING
 // ==========================================
 model VotingPeriod {
-  id          String      @id @default(uuid())
-  title       String
-  isActive    Boolean     @default(false)
-  periodId    String
-  period      Period      @relation(fields: [periodId], references: [id])
-  candidates  Candidate[]
-  votes       Vote[]
+  id         String      @id @default(uuid())
+  title      String
+  isActive   Boolean     @default(false)
+  periodId   String
+  period     Period      @relation(fields: [periodId], references: [id])
+  candidates Candidate[]
+  votes      Vote[]
 }
 
 model Candidate {
@@ -235,8 +237,8 @@ model Candidate {
   mission        String       @db.Text
   photoId        String?
   photo          Media?       @relation(fields: [photoId], references: [id])
-  
-  votes          Vote[]
+
+  votes Vote[]
 }
 
 model Vote {
@@ -248,7 +250,7 @@ model Vote {
   voterId        String
   voter          User         @relation(fields: [voterId], references: [id])
 
-  createdAt      DateTime     @default(now())
+  createdAt DateTime @default(now())
 
   @@unique([votingPeriodId, voterId])
 }
@@ -257,12 +259,12 @@ model Vote {
 // 7. URL SHORTENER
 // ==========================================
 model ShortLink {
-  id          String   @id @default(uuid())
-  code        String   @unique 
-  originalUrl String   @db.Text
-  clicks      Int      @default(0)
+  id          String @id @default(uuid())
+  code        String @unique
+  originalUrl String @db.Text
+  clicks      Int    @default(0)
 
-  createdAt   DateTime @default(now())
+  createdAt DateTime @default(now())
 }
 
 // ==========================================
@@ -283,20 +285,58 @@ model Transaction {
 
   // Rincian baris laporan (opsional). Jika quantity & unitPrice terisi,
   // amount (sub total) = quantity × unitPrice, dihitung di server.
-  quantity    Int?
-  unit        String?
-  unitPrice   Int?
-  vendorName  String?
+  quantity   Int?
+  unit       String?
+  unitPrice  Int?
+  vendorName String?
 
-  periodId    String?
-  period      Period?         @relation(fields: [periodId], references: [id], onDelete: SetNull)
+  periodId String?
+  period   Period? @relation(fields: [periodId], references: [id], onDelete: SetNull)
 
-  eventId     String?
-  event       Event?          @relation(fields: [eventId], references: [id], onDelete: SetNull)
+  eventId String?
+  event   Event?  @relation(fields: [eventId], references: [id], onDelete: SetNull)
 
   createdById String
-  createdBy   User            @relation(fields: [createdById], references: [id])
+  createdBy   User   @relation(fields: [createdById], references: [id])
 
-  createdAt   DateTime        @default(now())
-  updatedAt   DateTime        @updatedAt
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+}
+
+// ==========================================
+// FORUM ANGGOTA
+// ==========================================
+// angkatan null = Forum Umum (semua anggota ber-angkatan). Terisi = forum
+// khusus angkatan itu (hanya anggotanya + admin yang bisa melihat).
+model ForumThread {
+  id             String      @id @default(uuid())
+  title          String
+  body           String      @db.Text
+  angkatan       Int?
+  isPinned       Boolean     @default(false)
+  isLocked       Boolean     @default(false)
+  authorId       String
+  author         User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+  posts          ForumPost[]
+  // Diperbarui tiap ada balasan, untuk urutan "aktivitas terbaru".
+  lastActivityAt DateTime    @default(now())
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([angkatan, isPinned, lastActivityAt])
+}
+
+model ForumPost {
+  id       String      @id @default(uuid())
+  body     String      @db.Text
+  threadId String
+  thread   ForumThread @relation(fields: [threadId], references: [id], onDelete: Cascade)
+  authorId String
+  author   User        @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([threadId, createdAt])
 }
