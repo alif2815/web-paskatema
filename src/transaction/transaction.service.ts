@@ -90,6 +90,38 @@ export class TransactionService {
     return { lte: date };
   }
 
+  /**
+   * Rincian baris (jumlah, satuan, harga, vendor). Field yang tidak dikirim
+   * dibiarkan; string kosong disimpan sebagai null. Jika jumlah & harga
+   * (hasil gabungan dengan data lama saat update) sama-sama terisi, nominal
+   * dipaksa = jumlah × harga supaya sub total selalu konsisten.
+   */
+  private lineDetails(
+    dto: Pick<
+      UpdateTransactionDto,
+      'amount' | 'quantity' | 'unit' | 'unitPrice' | 'vendorName'
+    >,
+    existing?: { quantity: number | null; unitPrice: number | null },
+  ) {
+    const text = (v: string | null | undefined) =>
+      v === undefined ? undefined : v?.trim() || null;
+    const quantity =
+      dto.quantity !== undefined ? dto.quantity : existing?.quantity;
+    const unitPrice =
+      dto.unitPrice !== undefined ? dto.unitPrice : existing?.unitPrice;
+    const subtotal = quantity && unitPrice ? quantity * unitPrice : undefined;
+
+    return {
+      ...(dto.quantity !== undefined && { quantity: dto.quantity }),
+      ...(dto.unit !== undefined && { unit: text(dto.unit) }),
+      ...(dto.unitPrice !== undefined && { unitPrice: dto.unitPrice }),
+      ...(dto.vendorName !== undefined && {
+        vendorName: text(dto.vendorName),
+      }),
+      ...(subtotal !== undefined && { amount: subtotal }),
+    };
+  }
+
   async create(dto: CreateTransactionDto, createdById: string) {
     await this.validateRelations(dto);
 
@@ -99,6 +131,7 @@ export class TransactionService {
         date: new Date(dto.date),
         type: dto.type,
         description: dto.description,
+        ...this.lineDetails(dto),
         periodId: dto.periodId,
         eventId: dto.eventId,
         createdById,
@@ -148,7 +181,7 @@ export class TransactionService {
   }
 
   async update(id: string, dto: UpdateTransactionDto) {
-    await this.findOne(id);
+    const existing = await this.findOne(id);
     await this.validateRelations(dto);
 
     return this.prisma.transaction.update({
@@ -160,6 +193,7 @@ export class TransactionService {
         ...(dto.date != null && { date: new Date(dto.date) }),
         ...(dto.type != null && { type: dto.type }),
         ...(dto.description != null && { description: dto.description }),
+        ...this.lineDetails(dto, existing),
         ...(dto.periodId !== undefined && { periodId: dto.periodId }),
         ...(dto.eventId !== undefined && { eventId: dto.eventId }),
       },

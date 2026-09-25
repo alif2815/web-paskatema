@@ -278,6 +278,13 @@ model Transaction {
   type        TransactionType
   description String          @db.Text
 
+  // Rincian baris laporan (opsional). Jika quantity & unitPrice terisi,
+  // amount (sub total) = quantity × unitPrice, dihitung di server.
+  quantity    Int?
+  unit        String?
+  unitPrice   Int?
+  vendorName  String?
+
   periodId    String?
   period      Period?         @relation(fields: [periodId], references: [id], onDelete: SetNull)
 

@@ -8,6 +8,7 @@ import {
   IsPositive,
   IsString,
   IsUUID,
+  MaxLength,
   MinLength,
 } from 'class-validator';
 
@@ -43,6 +44,47 @@ export class CreateTransactionDto {
   @IsString()
   @MinLength(3)
   description: string;
+
+  @ApiProperty({
+    description: 'Jumlah barang/jasa (opsional)',
+    example: 10,
+    required: false,
+  })
+  @IsInt()
+  @IsPositive()
+  @IsOptional()
+  quantity?: number | null;
+
+  @ApiProperty({
+    description: 'Satuan jumlah, mis. pcs, dus, paket (opsional)',
+    example: 'pcs',
+    required: false,
+  })
+  @IsString()
+  @MaxLength(30)
+  @IsOptional()
+  unit?: string | null;
+
+  @ApiProperty({
+    description:
+      'Harga satuan dalam Rupiah (opsional). Jika jumlah & harga diisi, nominal = jumlah × harga',
+    example: 15000,
+    required: false,
+  })
+  @IsInt()
+  @IsPositive()
+  @IsOptional()
+  unitPrice?: number | null;
+
+  @ApiProperty({
+    description: 'Nama vendor/toko (opsional)',
+    example: 'Toko Sumber Rejeki',
+    required: false,
+  })
+  @IsString()
+  @MaxLength(100)
+  @IsOptional()
+  vendorName?: string | null;
 
   @ApiProperty({
     description: 'ID periode kepengurusan terkait (opsional)',
