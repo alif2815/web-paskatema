@@ -12,9 +12,12 @@ datasource db {
 // ==========================================
 // 1. USERS & AUTH
 // ==========================================
+// USER = anggota biasa. BENDAHARA = anggota yang juga boleh mengelola
+// laporan keuangan (transaksi kas) di panel admin, tanpa akses menu lain.
 enum Role {
   USER
   ADMIN
+  BENDAHARA
 }
 
 model User {

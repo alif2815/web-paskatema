@@ -194,9 +194,11 @@ export class UserController {
 
   /**
    * PATCH /user/:id/role
-   * Mengubah role user (USER / ADMIN) — khusus Admin
+   * Mengubah role user (USER / BENDAHARA / ADMIN) — khusus Admin
    */
-  @ApiOperation({ summary: '[Admin] Ubah role user (USER / ADMIN)' })
+  @ApiOperation({
+    summary: '[Admin] Ubah role user (USER / BENDAHARA / ADMIN)',
+  })
   @ApiParam({ name: 'id', description: 'UUID user', example: 'a1b2c3d4-...' })
   @ApiResponse({ status: 200, description: 'Role berhasil diubah' })
   @ApiResponse({ status: 404, description: 'User tidak ditemukan' })

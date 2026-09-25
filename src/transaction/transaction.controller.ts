@@ -24,6 +24,7 @@ import { RolesGuard } from '../auth/guards/roles.guard';
 import { GetUser, Roles } from '../auth/decorators/get-user.decorators';
 
 @ApiTags('Transaction')
+// Pencatatan kas hanya oleh bendahara; admin cukup bisa melihat laporan.
 @Controller('transaction')
 export class TransactionController {
   constructor(private readonly transactionService: TransactionService) {}
@@ -31,8 +32,8 @@ export class TransactionController {
   @Post()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Admin: Catat transaksi kas baru' })
+  @Roles(Role.BENDAHARA)
+  @ApiOperation({ summary: 'Bendahara: Catat transaksi kas baru' })
   create(
     @Body() createTransactionDto: CreateTransactionDto,
     @GetUser('id') userId: string,
@@ -43,9 +44,9 @@ export class TransactionController {
   @Get()
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
+  @Roles(Role.ADMIN, Role.BENDAHARA)
   @ApiOperation({
-    summary: 'Admin: Lihat daftar transaksi (filter & pagination)',
+    summary: 'Admin/Bendahara: Lihat daftar transaksi (filter & pagination)',
   })
   findAll(@Query() query: QueryTransactionDto) {
     return this.transactionService.findAll(query);
@@ -65,8 +66,8 @@ export class TransactionController {
   @Get(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Admin: Lihat detail transaksi' })
+  @Roles(Role.ADMIN, Role.BENDAHARA)
+  @ApiOperation({ summary: 'Admin/Bendahara: Lihat detail transaksi' })
   findOne(@Param('id') id: string) {
     return this.transactionService.findOne(id);
   }
@@ -74,8 +75,8 @@ export class TransactionController {
   @Patch(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Admin: Update transaksi' })
+  @Roles(Role.BENDAHARA)
+  @ApiOperation({ summary: 'Bendahara: Update transaksi' })
   update(
     @Param('id') id: string,
     @Body() updateTransactionDto: UpdateTransactionDto,
@@ -86,8 +87,8 @@ export class TransactionController {
   @Delete(':id')
   @ApiBearerAuth()
   @UseGuards(JwtAuthGuard, RolesGuard)
-  @Roles(Role.ADMIN)
-  @ApiOperation({ summary: 'Admin: Hapus transaksi' })
+  @Roles(Role.BENDAHARA)
+  @ApiOperation({ summary: 'Bendahara: Hapus transaksi' })
   remove(@Param('id') id: string) {
     return this.transactionService.remove(id);
   }
