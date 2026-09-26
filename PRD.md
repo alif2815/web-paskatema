@@ -49,7 +49,13 @@ Fitur dibagi berdasarkan hak akses untuk menjaga keamanan dan kerapian operasion
 ### Fitur Pengguna Umum (User)
 * **Pendaftaran Anggota Dinamis:** *User* dapat mendaftar menjadi anggota Paskatema melalui formulir yang telah disediakan.
 * **Sistem Voting:** Terintegrasi di halaman Struktur, memungkinkan *user* untuk memberikan suara dalam pemilihan Komandan dan Wakil Komandan periode selanjutnya.
-* **Galeri per Angkatan:** Anggota mengunggah foto ke galeri angkatannya sendiri dan mengelola foto miliknya.
+* **Galeri per Angkatan:** Anggota mengunggah foto & video ke galeri angkatannya sendiri dan mengelola miliknya.
+* **Profil Anggota (Aktif/Purna):** Jaringan ala LinkedIn untuk anggota dan alumni.
+  * Status **Aktif** atau **Purna** ditetapkan admin (per anggota, atau satu angkatan sekaligus).
+  * Anggota mengisi sendiri: pendidikan/kampus, pekerjaan/instansi, keahlian, LinkedIn, Instagram.
+  * Direktori `/anggota` (cari nama, filter status & angkatan) dan halaman profil `/anggota/<id>` dengan riwayat jabatan.
+  * Privasi: publik hanya melihat nama, foto, angkatan, status, dan jabatan. Detail profil hanya untuk anggota ber-angkatan yang login. Anggota Purna boleh memilih profil lengkapnya tampil publik.
+* **Event:** Halaman `/event` berisi agenda dan dokumentasi kegiatan, dengan poster dan video.
 * **Forum Anggota:** Diskusi berbentuk topik dan balasan, khusus anggota yang angkatannya sudah diisi admin.
   * **Forum Umum:** terbuka untuk semua angkatan.
   * **Forum Angkatan:** hanya bisa dilihat dan ditulisi anggota angkatan tersebut.
@@ -64,6 +70,30 @@ Fitur dibagi berdasarkan hak akses untuk menjaga keamanan dan kerapian operasion
 * **Berita dalam Markdown:** Isi berita ditulis dengan Markdown (ada pratinjau) dan disimpan sebagai file `content/news/<id>.md`.
 * **Manajemen Anggota & Role:** Admin mengisi angkatan anggota dan menetapkan role Anggota/Bendahara/Admin.
 * **Moderasi Forum:** Sematkan, kunci, dan hapus topik/balasan.
-* **Media / Document Manager:** Sistem penyimpanan *file* terpusat (lokal di `uploads/`, atau Cloudinary bila dikonfigurasi). Admin dapat mengunggah dan menyimpan foto dokumentasi di *server*. Saat membuat berita atau *event* baru, admin tinggal memilih gambar dari galeri yang sudah ada tanpa harus mencari ulang di *device* lokal (mendukung *upload* langsung juga).
+* **Status Anggota:** Menetapkan status Aktif/Purna per anggota atau untuk satu angkatan sekaligus.
+* **Media / Document Manager:** Sistem penyimpanan *file* terpusat. Foto (≤ 5 MB) dan video (MP4/WEBM/MOV, ≤ 100 MB) disimpan di Cloudinary bila dikonfigurasi, selain itu lokal di `uploads/`. PDF E-Book dan isi berita tetap di server. Admin dapat mengunggah dan menyimpan foto dokumentasi di *server*. Saat membuat berita atau *event* baru, admin tinggal memilih gambar dari galeri yang sudah ada tanpa harus mencari ulang di *device* lokal (mendukung *upload* langsung juga).
 * **Form Builder Dinamis:** Admin dapat mengatur dan memodifikasi *field* (isian) pada formulir pendaftaran anggota baru secara dinamis untuk ditampilkan di *Front-End*.
 * **URL Shortener:** Fitur bawaan untuk mempersingkat tautan (*link*) guna memudahkan penyebaran informasi ke anggota atau publik.
+
+---
+
+## ☁️ Penyiapan Cloudinary (sekali jalan)
+
+Sampai langkah ini selesai, semua file tetap tersimpan di server dan website berjalan normal.
+
+1. **Buat akun** gratis di https://cloudinary.com/users/register_free memakai email organisasi/sekolah (bukan email pribadi). Cloud name disarankan `paskatema`.
+2. **Ambil kunci** di https://console.cloudinary.com/settings/api-keys: salin *API environment variable* (`cloudinary://API_KEY:API_SECRET@CLOUD_NAME`). API Secret rahasia: jangan dikirim di chat atau di-commit.
+3. **Isi `.env`** di VPS (`/docker/paskatema/web-paskatema/.env`):
+   ```
+   CLOUDINARY_URL="cloudinary://API_KEY:API_SECRET@CLOUD_NAME"
+   CLOUDINARY_FOLDER="paskatema"
+   ```
+4. **Restart backend:** `docker compose up -d --force-recreate`, lalu cek `docker compose logs paskatema-api | grep Penyimpanan` harus menampilkan *Penyimpanan foto & video: Cloudinary*.
+5. **Pindahkan foto lama:**
+   ```bash
+   docker exec paskatema_api node dist/src/scripts/migrate-uploads-to-cloudinary.js --dry-run
+   docker exec paskatema_api node dist/src/scripts/migrate-uploads-to-cloudinary.js
+   ```
+   Aman diulang; file lokal tidak dihapus dan tetap jadi cadangan.
+
+Kuota paket gratis ± 25 kredit/bulan (penyimpanan + bandwidth + transformasi). Video paling cepat menghabiskan kuota; pantau di dashboard Cloudinary.
