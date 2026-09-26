@@ -17,13 +17,19 @@ export class MediaService {
     // Prefix /api wajib ada karena di domain publik, Traefik cuma
     // meneruskan path yang diawali /api ke backend ini (lihat
     // docker-compose.yml) — tanpa prefix ini URL-nya akan 404.
-    // Gambar lewat StorageService (lokal atau Cloudinary); PDF selalu lokal.
-    const stored = file.mimetype.startsWith('image/')
-      ? await this.storage.saveDiskFile(file, baseUrl, 'media')
-      : {
-          url: `${baseUrl}/api/uploads/${file.filename}`,
-          publicId: null,
-        };
+    // Gambar & video lewat StorageService (lokal atau Cloudinary); PDF selalu lokal.
+    const isVideo = file.mimetype.startsWith('video/');
+    const stored =
+      file.mimetype.startsWith('image/') || isVideo
+        ? await this.storage.saveDiskFile(
+            file,
+            baseUrl,
+            isVideo ? 'video' : 'media',
+          )
+        : {
+            url: `${baseUrl}/api/uploads/${file.filename}`,
+            publicId: null,
+          };
 
     try {
       return await this.prisma.media.create({
@@ -38,7 +44,7 @@ export class MediaService {
       });
     } catch (error) {
       // Jangan tinggalkan file yatim jika insert DB gagal.
-      await this.storage.remove(stored);
+      await this.storage.remove({ ...stored, mimeType: file.mimetype });
       throw error;
     }
   }

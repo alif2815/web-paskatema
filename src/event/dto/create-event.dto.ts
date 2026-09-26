@@ -43,4 +43,13 @@ export class CreateEventDto {
   @IsOptional()
   @IsUUID()
   posterId?: string;
+
+  @ApiPropertyOptional({
+    description: 'Video dokumentasi kegiatan (id Media bertipe video)',
+    example: 'uuid-media-video',
+    nullable: true,
+  })
+  @IsOptional()
+  @IsUUID()
+  videoId?: string | null;
 }

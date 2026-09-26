@@ -19,6 +19,7 @@ import { Request as ExpressRequest } from 'express';
 
 import { MediaService } from './media.service';
 import { documentMulterConfig } from './document-multer.config';
+import { videoMulterConfig } from './video-multer.config';
 import { multerConfig } from './multer.config';
 import { JwtAuthGuard } from '../auth/guards/jwt-auth.guard';
 import { RolesGuard } from '../auth/guards/roles.guard';
@@ -51,6 +52,33 @@ export class MediaController {
   @UseGuards(JwtAuthGuard)
   @UseInterceptors(FileInterceptor('file', multerConfig))
   uploadImage(
+    @UploadedFile() file: Express.Multer.File,
+    @Request() request: RequestWithUser,
+  ) {
+    const baseUrl = `${request.protocol}://${request.get('host')}`;
+
+    return this.mediaService.create(file, request.user.id, baseUrl);
+  }
+
+  /**
+   * POST /media/upload-video
+   * Upload video (MP4/WEBM/MOV, maks 100MB) untuk galeri angkatan dan
+   * dokumentasi event. Untuk semua user yang login, dengan rate-limit ketat.
+   */
+  @Post('upload-video')
+  @ApiBearerAuth()
+  @ApiConsumes('multipart/form-data')
+  @ApiBody({
+    schema: {
+      type: 'object',
+      properties: { file: { type: 'string', format: 'binary' } },
+      required: ['file'],
+    },
+  })
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @UseGuards(JwtAuthGuard)
+  @UseInterceptors(FileInterceptor('file', videoMulterConfig))
+  uploadVideo(
     @UploadedFile() file: Express.Multer.File,
     @Request() request: RequestWithUser,
   ) {

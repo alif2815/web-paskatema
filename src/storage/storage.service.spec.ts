@@ -6,6 +6,7 @@ import { join } from 'path';
 const upload = jest.fn();
 const destroy = jest.fn();
 const uploadStream = jest.fn();
+const uploadLarge = jest.fn();
 const config = jest.fn();
 
 jest.mock('cloudinary', () => ({
@@ -15,6 +16,7 @@ jest.mock('cloudinary', () => ({
       upload: (...args: unknown[]) => upload(...args),
       destroy: (...args: unknown[]) => destroy(...args),
       upload_stream: (...args: unknown[]) => uploadStream(...args),
+      upload_large: (...args: unknown[]) => uploadLarge(...args),
     },
   },
 }));
@@ -192,6 +194,49 @@ describe('StorageService', () => {
       ).resolves.toBeUndefined();
       expect(destroy).toHaveBeenCalledWith('paskatema/media/b', {
         resource_type: 'image',
+        invalidate: true,
+      });
+    });
+
+    it('uploads videos with upload_large and deletes them as video', async () => {
+      const temp = join(tmp, 'uploads', 'v.mp4');
+      writeFileSync(temp, 'vid');
+      uploadLarge.mockImplementation(
+        (_path: string, _opts: unknown, cb: (e: unknown, r: unknown) => void) =>
+          cb(undefined, {
+            secure_url:
+              'https://res.cloudinary.com/demo/video/upload/v1/paskatema/video/v.mp4',
+            public_id: 'paskatema/video/v',
+          }),
+      );
+      const service = new StorageService();
+
+      const result = await service.saveDiskFile(
+        {
+          filename: 'v.mp4',
+          path: temp,
+          mimetype: 'video/mp4',
+        } as Express.Multer.File,
+        'https://paskatema.test',
+        'video',
+      );
+      expect(uploadLarge).toHaveBeenCalledWith(
+        temp,
+        expect.objectContaining({
+          folder: 'paskatema/video',
+          resource_type: 'video',
+        }),
+        expect.any(Function),
+      );
+      expect(upload).not.toHaveBeenCalled();
+      expect(result.publicId).toBe('paskatema/video/v');
+      expect(existsSync(temp)).toBe(false);
+
+      destroy.mockResolvedValue({});
+      await service.remove({ ...result, mimeType: 'video/mp4' });
+      expect(destroy).toHaveBeenCalledWith('paskatema/video/v', {
+        resource_type: 'video',
+        invalidate: true,
       });
     });
 

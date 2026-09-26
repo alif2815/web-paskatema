@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  BadRequestException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -9,8 +13,23 @@ import { UpdateEventDto } from './dto/update-event.dto';
 export class EventService {
   constructor(private readonly prisma: PrismaService) {}
 
+  /** Video event harus Media yang ada dan bertipe video. */
+  private async assertVideo(videoId: string | null | undefined) {
+    if (!videoId) return;
+    const video = await this.prisma.media.findUnique({
+      where: { id: videoId },
+    });
+    if (!video) {
+      throw new NotFoundException('Media video tidak ditemukan');
+    }
+    if (!video.mimeType.startsWith('video/')) {
+      throw new BadRequestException('Media dokumentasi harus berupa video');
+    }
+  }
+
   async create(createEventDto: CreateEventDto) {
-    const { title, description, date, location, posterId } = createEventDto;
+    const { title, description, date, location, posterId, videoId } =
+      createEventDto;
 
     // Pastikan poster Media benar-benar ada
     if (posterId) {
@@ -25,6 +44,8 @@ export class EventService {
       }
     }
 
+    await this.assertVideo(videoId);
+
     return this.prisma.event.create({
       data: {
         title,
@@ -32,9 +53,11 @@ export class EventService {
         date: new Date(date),
         location,
         posterId,
+        videoId,
       },
       include: {
         poster: true,
+        video: true,
       },
     });
   }
@@ -46,6 +69,7 @@ export class EventService {
       },
       include: {
         poster: true,
+        video: true,
       },
     });
   }
@@ -62,6 +86,7 @@ export class EventService {
       },
       include: {
         poster: true,
+        video: true,
       },
     });
   }
@@ -78,6 +103,7 @@ export class EventService {
       },
       include: {
         poster: true,
+        video: true,
       },
     });
   }
@@ -89,6 +115,7 @@ export class EventService {
       },
       include: {
         poster: true,
+        video: true,
       },
     });
 
@@ -110,7 +137,9 @@ export class EventService {
       throw new NotFoundException('Event tidak ditemukan');
     }
 
-    const { title, description, date, location, posterId } = updateEventDto;
+    const { title, description, date, location, posterId, videoId } =
+      updateEventDto;
+    await this.assertVideo(videoId);
 
     // Cek poster baru jika dikirim
     if (posterId) {
@@ -131,6 +160,7 @@ export class EventService {
       date?: Date;
       location?: string;
       posterId?: string;
+      videoId?: string | null;
     } = {};
 
     if (title !== undefined) {
@@ -152,6 +182,10 @@ export class EventService {
     if (posterId !== undefined) {
       data.posterId = posterId;
     }
+    // null = hapus video dari event.
+    if (videoId !== undefined) {
+      data.videoId = videoId;
+    }
 
     return this.prisma.event.update({
       where: {
@@ -160,6 +194,7 @@ export class EventService {
       data,
       include: {
         poster: true,
+        video: true,
       },
     });
   }

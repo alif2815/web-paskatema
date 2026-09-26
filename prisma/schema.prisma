@@ -67,7 +67,8 @@ model Media {
 
   userAvatars     User[]         @relation("UserAvatar")
   newsCovers      News[]
-  eventPosters    Event[]
+  eventPosters    Event[]        @relation("EventPoster")
+  eventVideos     Event[]        @relation("EventVideo")
   achievements    Achievement[]
   eBooks          EBook[]
   candidatePhotos Candidate[]
@@ -104,7 +105,10 @@ model Event {
   date        DateTime
   location    String?
   posterId    String?
-  poster      Media?   @relation(fields: [posterId], references: [id], onDelete: SetNull)
+  poster      Media?   @relation("EventPoster", fields: [posterId], references: [id], onDelete: SetNull)
+  // Video dokumentasi kegiatan (opsional, disimpan di Cloudinary bila aktif).
+  videoId     String?
+  video       Media?   @relation("EventVideo", fields: [videoId], references: [id], onDelete: SetNull)
 
   transactions Transaction[]
 

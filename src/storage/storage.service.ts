@@ -14,6 +14,14 @@ export interface StoredImage {
 export interface StoredFileRef {
   url: string;
   publicId: string | null;
+  /** Dipakai untuk memilih resource_type Cloudinary (video vs gambar). */
+  mimeType?: string;
+}
+
+export type ResourceType = 'image' | 'video';
+
+export function resourceTypeFor(mimeType: string | undefined): ResourceType {
+  return mimeType?.startsWith('video/') ? 'video' : 'image';
 }
 
 const LOCAL_URL_PREFIX = '/api/uploads/';
@@ -25,7 +33,7 @@ const LOCAL_URL_PREFIX = '/api/uploads/';
  * baru otomatis diunggah ke Cloudinary. Foto lama yang sudah tersimpan lokal
  * tetap berfungsi — URL-nya tidak berubah.
  *
- * Hanya gambar yang lewat sini; PDF (E-Book) tetap disimpan lokal.
+ * Gambar dan video lewat sini; PDF (E-Book) tetap disimpan lokal.
  */
 @Injectable()
 export class StorageService {
@@ -51,9 +59,9 @@ export class StorageService {
         });
       }
       cloudinary.config({ secure: true });
-      this.logger.log('Penyimpanan foto: Cloudinary');
+      this.logger.log('Penyimpanan foto & video: Cloudinary');
     } else {
-      this.logger.log('Penyimpanan foto: disk lokal (uploads/)');
+      this.logger.log('Penyimpanan foto & video: disk lokal (uploads/)');
     }
   }
 
@@ -87,14 +95,11 @@ export class StorageService {
     }
 
     try {
-      const result = await cloudinary.uploader.upload(file.path, {
-        folder: `${this.folder}/${subfolder}`,
-        resource_type: 'image',
-      });
-      return {
-        url: this.optimizedUrl(result.secure_url),
-        publicId: result.public_id,
-      };
+      return await this.uploadPath(
+        file.path,
+        subfolder,
+        resourceTypeFor(file.mimetype),
+      );
     } finally {
       // File sementara tidak dibutuhkan lagi (sukses maupun gagal upload).
       await fs.rm(file.path, { force: true });
@@ -148,12 +153,55 @@ export class StorageService {
     };
   }
 
+  /**
+   * Unggah file yang sudah ada di disk ke Cloudinary (file lokal tidak
+   * dihapus). Dipakai saveDiskFile dan script migrasi uploads/ -> Cloudinary.
+   * Video diunggah per potongan (upload_large) supaya file besar tidak gagal.
+   */
+  async uploadPath(
+    path: string,
+    subfolder: string,
+    resourceType: ResourceType,
+  ): Promise<StoredImage> {
+    const options = {
+      folder: `${this.folder}/${subfolder}`,
+      resource_type: resourceType,
+    };
+    const result =
+      resourceType === 'video'
+        ? await new Promise<{ secure_url: string; public_id: string }>(
+            (resolve, reject) => {
+              void cloudinary.uploader.upload_large(
+                path,
+                options,
+                (error, uploaded) => {
+                  if (error || !uploaded) {
+                    reject(
+                      new Error(
+                        error?.message ?? 'Upload video Cloudinary gagal',
+                      ),
+                    );
+                    return;
+                  }
+                  resolve(uploaded);
+                },
+              );
+            },
+          )
+        : await cloudinary.uploader.upload(path, options);
+    return {
+      url: this.optimizedUrl(result.secure_url),
+      publicId: result.public_id,
+    };
+  }
+
   /** Hapus file dari penyimpanan (best-effort: kegagalan hanya di-log). */
   async remove(ref: StoredFileRef): Promise<void> {
     try {
       if (ref.publicId) {
         await cloudinary.uploader.destroy(ref.publicId, {
-          resource_type: 'image',
+          resource_type: resourceTypeFor(ref.mimeType),
+          invalidate: true,
         });
         return;
       }

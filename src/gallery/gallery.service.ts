@@ -52,8 +52,12 @@ export class GalleryService {
     if (!image) {
       throw new NotFoundException('Media foto tidak ditemukan');
     }
-    if (!image.mimeType.startsWith('image/')) {
-      throw new BadRequestException('Media harus berupa gambar');
+    // Galeri menampung foto dan video pendek.
+    if (
+      !image.mimeType.startsWith('image/') &&
+      !image.mimeType.startsWith('video/')
+    ) {
+      throw new BadRequestException('Media harus berupa foto atau video');
     }
     // Anggota hanya boleh memakai foto yang ia unggah sendiri (bukan media
     // milik orang lain).
