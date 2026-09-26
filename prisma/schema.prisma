@@ -20,18 +20,35 @@ enum Role {
   BENDAHARA
 }
 
+// Status keanggotaan: AKTIF = masih anggota aktif, PURNA = alumni. Diatur admin.
+enum MemberStatus {
+  AKTIF
+  PURNA
+}
+
 model User {
-  id       String  @id @default(uuid())
-  email    String  @unique
-  password String
-  name     String
-  role     Role    @default(USER)
-  phone    String?
-  bio      String? @db.Text
+  id           String       @id @default(uuid())
+  email        String       @unique
+  password     String
+  name         String
+  role         Role         @default(USER)
+  phone        String?
+  bio          String?      @db.Text
   // Nomor angkatan/generasi anggota (mis. 32 = "Angkatan 32"), terpisah
   // dari Period (periode kepengurusan) — berlaku untuk semua anggota,
   // bukan hanya yang menjabat struktur organisasi.
-  angkatan Int?
+  angkatan     Int?
+  memberStatus MemberStatus @default(AKTIF)
+
+  // Profil ala LinkedIn (diisi anggota sendiri). Hanya terlihat oleh sesama
+  // anggota, kecuali anggota PURNA memilih profilePublic.
+  education     String?
+  occupation    String?
+  skills        String[] @default([])
+  linkedinUrl   String?
+  instagram     String?
+  profilePublic Boolean  @default(false)
+
   avatarId String?
   avatar   Media?  @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: SetNull)
 

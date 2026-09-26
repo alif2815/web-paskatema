@@ -4,12 +4,16 @@ import {
   Injectable,
   NotFoundException,
 } from '@nestjs/common';
-import { Prisma, Role } from '@prisma/client';
+import { MemberStatus, Prisma, Role } from '@prisma/client';
 import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
-import { UpdateProfileDto } from './dto/update-profile.dto';
+import {
+  BulkMemberStatusDto,
+  UpdateProfileDto,
+} from './dto/update-profile.dto';
+import type { AuthenticatedUser } from '../auth/strategy/jwt-strategy';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 
@@ -28,6 +32,13 @@ const USER_SAFE_SELECT = {
   phone: true,
   bio: true,
   angkatan: true,
+  memberStatus: true,
+  education: true,
+  occupation: true,
+  skills: true,
+  linkedinUrl: true,
+  instagram: true,
+  profilePublic: true,
   avatarId: true,
   avatar: {
     select: {
@@ -110,6 +121,7 @@ export class UserService {
         id: true,
         name: true,
         angkatan: true,
+        memberStatus: true,
         avatar: { select: { url: true } },
         structures: {
           where: { period: { isActive: true } },
@@ -124,9 +136,107 @@ export class UserService {
       id: user.id,
       name: user.name,
       angkatan: user.angkatan,
+      memberStatus: user.memberStatus,
       avatarUrl: user.avatar?.url ?? null,
       position: user.structures[0]?.position.name ?? null,
     }));
+  }
+
+  // ==========================================
+  // 1c. Profil Anggota (Halaman /anggota/:id)
+  // ==========================================
+  /**
+   * Profil satu anggota. Semua orang melihat data dasar (nama, angkatan,
+   * status, riwayat jabatan). Detail ala LinkedIn (pendidikan, pekerjaan,
+   * keahlian, tautan, bio) hanya untuk admin & anggota ber-angkatan yang
+   * login, atau publik bila anggota PURNA memilih profilePublic.
+   */
+  async findMemberProfile(id: string, viewer: AuthenticatedUser | null) {
+    const user = await this.prisma.user.findFirst({
+      where: { id, angkatan: { not: null } },
+      select: {
+        id: true,
+        name: true,
+        angkatan: true,
+        memberStatus: true,
+        bio: true,
+        education: true,
+        occupation: true,
+        skills: true,
+        linkedinUrl: true,
+        instagram: true,
+        profilePublic: true,
+        avatar: { select: { url: true } },
+        structures: {
+          select: {
+            position: { select: { name: true, level: true } },
+            period: { select: { name: true, isActive: true } },
+          },
+          orderBy: { period: { name: 'desc' } },
+        },
+      },
+    });
+    if (!user) {
+      throw new NotFoundException('Anggota tidak ditemukan');
+    }
+
+    let canSeeDetails =
+      user.profilePublic && user.memberStatus === MemberStatus.PURNA;
+    if (!canSeeDetails && viewer) {
+      if (viewer.role === Role.ADMIN || viewer.id === user.id) {
+        canSeeDetails = true;
+      } else {
+        const me = await this.prisma.user.findUnique({
+          where: { id: viewer.id },
+          select: { angkatan: true },
+        });
+        canSeeDetails = me?.angkatan != null;
+      }
+    }
+
+    const basic = {
+      id: user.id,
+      name: user.name,
+      angkatan: user.angkatan,
+      memberStatus: user.memberStatus,
+      avatarUrl: user.avatar?.url ?? null,
+      positions: user.structures.map((s) => ({
+        position: s.position.name,
+        period: s.period.name,
+        isActive: s.period.isActive,
+      })),
+      detailsVisible: canSeeDetails,
+    };
+    if (!canSeeDetails) {
+      return basic;
+    }
+    return {
+      ...basic,
+      bio: user.bio,
+      education: user.education,
+      occupation: user.occupation,
+      skills: user.skills,
+      linkedinUrl: user.linkedinUrl,
+      instagram: user.instagram,
+    };
+  }
+
+  /** Ubah status Aktif/Purna seluruh anggota satu angkatan (admin). */
+  async bulkMemberStatus(dto: BulkMemberStatusDto) {
+    const result = await this.prisma.user.updateMany({
+      where: { angkatan: dto.angkatan },
+      data: {
+        memberStatus: dto.memberStatus,
+        // Profil publik hanya untuk Purna.
+        ...(dto.memberStatus === MemberStatus.AKTIF && {
+          profilePublic: false,
+        }),
+      },
+    });
+    return {
+      message: `${result.count} anggota Angkatan ${dto.angkatan} kini berstatus ${dto.memberStatus === MemberStatus.PURNA ? 'Purna' : 'Aktif'}`,
+      count: result.count,
+    };
   }
 
   // ==========================================
@@ -150,7 +260,7 @@ export class UserService {
   // ==========================================
   async updateProfile(id: string, dto: UpdateProfileDto) {
     // Pastikan user ada
-    await this.findById(id);
+    const current = await this.findById(id);
 
     // Jika avatarId dikirim, validasi bahwa media tersebut ada
     if (dto.avatarId) {
@@ -162,9 +272,37 @@ export class UserService {
       }
     }
 
+    const text = (v: string | null | undefined) =>
+      v === undefined ? undefined : v?.trim() || null;
+    const data: Prisma.UserUpdateInput = {
+      ...dto,
+      ...(dto.education !== undefined && { education: text(dto.education) }),
+      ...(dto.occupation !== undefined && { occupation: text(dto.occupation) }),
+      ...(dto.linkedinUrl !== undefined && {
+        linkedinUrl: text(dto.linkedinUrl),
+      }),
+      ...(dto.instagram !== undefined && {
+        instagram: text(dto.instagram)?.replace(/^@/, '') ?? null,
+      }),
+      ...(dto.skills !== undefined && {
+        skills: [...new Set(dto.skills.map((s) => s.trim()).filter(Boolean))],
+      }),
+    };
+
+    // Profil publik hanya untuk Purna (anggota Aktif umumnya masih siswa).
+    const status = dto.memberStatus ?? current.memberStatus;
+    if (dto.profilePublic === true && status !== MemberStatus.PURNA) {
+      throw new BadRequestException(
+        'Profil publik hanya tersedia untuk anggota berstatus Purna',
+      );
+    }
+    if (status !== MemberStatus.PURNA) {
+      data.profilePublic = false;
+    }
+
     return this.prisma.user.update({
       where: { id },
-      data: dto,
+      data,
       select: USER_SAFE_SELECT,
     });
   }

@@ -7,6 +7,7 @@ import {
   Post,
   Body,
   Query,
+  Req,
   UploadedFile,
   UseGuards,
   UseInterceptors,
@@ -25,10 +26,13 @@ import { Role } from '@prisma/client';
 
 import { UserService } from './user.service';
 import {
+  BulkMemberStatusDto,
   UpdateOwnProfileDto,
   UpdateProfileDto,
 } from './dto/update-profile.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
+import type { AuthenticatedUser } from '../auth/strategy/jwt-strategy';
 import { QueryUserDto } from './dto/query-user.dto';
 import { GetUser, Roles } from '../auth/decorators/get-user.decorators';
 import { Public } from '../auth/decorators/public.decorator';
@@ -127,6 +131,37 @@ export class UserController {
   @Get('public')
   findPublicDirectory() {
     return this.userService.findPublicDirectory();
+  }
+
+  /**
+   * GET /user/profile/:id
+   * Profil anggota. Tanpa login: data dasar saja (kecuali Purna yang memilih
+   * profil publik). Anggota ber-angkatan & admin: profil lengkap.
+   */
+  @ApiOperation({
+    summary: 'Public/Anggota: Profil anggota (detail untuk anggota yang login)',
+  })
+  @Public()
+  @UseGuards(OptionalJwtAuthGuard)
+  @Get('profile/:id')
+  findMemberProfile(
+    @Param('id') id: string,
+    @Req() request: { user?: AuthenticatedUser | null },
+  ) {
+    return this.userService.findMemberProfile(id, request.user ?? null);
+  }
+
+  /**
+   * PATCH /user/status-by-angkatan
+   * Ubah status Aktif/Purna satu angkatan sekaligus. Diletakkan sebelum
+   * PATCH /:id supaya tidak tertangkap sebagai parameter :id.
+   */
+  @ApiOperation({ summary: '[Admin] Ubah status Aktif/Purna satu angkatan' })
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch('status-by-angkatan')
+  bulkMemberStatus(@Body() dto: BulkMemberStatusDto) {
+    return this.userService.bulkMemberStatus(dto);
   }
 
   // ==========================================
