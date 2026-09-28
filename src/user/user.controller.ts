@@ -32,7 +32,11 @@ import {
   UpdateProfileDto,
 } from './dto/update-profile.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
-import { PurnaClaimDto, ReviewPurnaClaimDto } from './dto/purna-claim.dto';
+import {
+  ApproveAngkatanDto,
+  MembershipClaimDto,
+  ReviewMembershipClaimDto,
+} from './dto/membership-claim.dto';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/strategy/jwt-strategy';
 import { QueryUserDto } from './dto/query-user.dto';
@@ -154,38 +158,52 @@ export class UserController {
   }
 
   /**
-   * POST /user/me/purna-claim
-   * Ajukan diri sebagai purna (alumni). Diverifikasi admin.
+   * POST /user/me/membership-claim
+   * Anggota aktif/purna yang sudah ada mengajukan angkatan & status.
    */
-  @ApiOperation({ summary: 'Ajukan klaim sebagai purna (alumni)' })
+  @ApiOperation({ summary: 'Ajukan verifikasi keanggotaan (aktif/purna)' })
   @Throttle({ default: { limit: 5, ttl: 60_000 } })
-  @Post('me/purna-claim')
-  submitPurnaClaim(@GetUser('id') userId: string, @Body() dto: PurnaClaimDto) {
-    return this.userService.submitPurnaClaim(userId, dto);
+  @Post('me/membership-claim')
+  submitMembershipClaim(
+    @GetUser('id') userId: string,
+    @Body() dto: MembershipClaimDto,
+  ) {
+    return this.userService.submitMembershipClaim(userId, dto);
   }
 
   /**
-   * GET /user/purna-claims
-   * Klaim purna yang menunggu verifikasi. Sebelum GET /:id.
+   * GET /user/membership-claims
+   * Pengajuan yang menunggu verifikasi. Sebelum GET /:id.
    */
-  @ApiOperation({ summary: '[Admin] Daftar klaim purna menunggu verifikasi' })
+  @ApiOperation({
+    summary: '[Admin] Pengajuan keanggotaan menunggu verifikasi',
+  })
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  @Get('purna-claims')
-  findPurnaClaims() {
-    return this.userService.findPurnaClaims();
+  @Get('membership-claims')
+  findMembershipClaims() {
+    return this.userService.findMembershipClaims();
   }
 
-  /**
-   * PATCH /user/:id/purna-claim
-   * Setujui atau tolak klaim purna.
-   */
-  @ApiOperation({ summary: '[Admin] Setujui/tolak klaim purna' })
+  /** POST /user/membership-claims/approve-angkatan: setujui satu angkatan sekaligus. */
+  @ApiOperation({ summary: '[Admin] Setujui semua pengajuan satu angkatan' })
   @UseGuards(RolesGuard)
   @Roles(Role.ADMIN)
-  @Patch(':id/purna-claim')
-  reviewPurnaClaim(@Param('id') id: string, @Body() dto: ReviewPurnaClaimDto) {
-    return this.userService.reviewPurnaClaim(id, dto);
+  @Post('membership-claims/approve-angkatan')
+  approveAngkatanClaims(@Body() dto: ApproveAngkatanDto) {
+    return this.userService.approveAngkatanClaims(dto);
+  }
+
+  /** PATCH /user/:id/membership-claim: setujui/tolak satu pengajuan. */
+  @ApiOperation({ summary: '[Admin] Setujui/tolak pengajuan keanggotaan' })
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch(':id/membership-claim')
+  reviewMembershipClaim(
+    @Param('id') id: string,
+    @Body() dto: ReviewMembershipClaimDto,
+  ) {
+    return this.userService.reviewMembershipClaim(id, dto);
   }
 
   /**

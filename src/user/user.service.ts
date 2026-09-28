@@ -20,7 +20,11 @@ import {
   holdsTreasurerPosition,
   syncTreasurerRoles,
 } from '../auth/treasurer-role';
-import { PurnaClaimDto, ReviewPurnaClaimDto } from './dto/purna-claim.dto';
+import {
+  ApproveAngkatanDto,
+  MembershipClaimDto,
+  ReviewMembershipClaimDto,
+} from './dto/membership-claim.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 
@@ -46,10 +50,11 @@ const USER_SAFE_SELECT = {
   linkedinUrl: true,
   instagram: true,
   profilePublic: true,
-  purnaClaimAngkatan: true,
-  purnaClaimYear: true,
-  purnaClaimNote: true,
-  purnaClaimAt: true,
+  claimStatus: true,
+  claimAngkatan: true,
+  claimGraduationYear: true,
+  claimNote: true,
+  claimAt: true,
   avatarId: true,
   avatar: {
     select: {
@@ -263,10 +268,18 @@ export class UserService implements OnApplicationBootstrap {
   }
 
   // ==========================================
-  // 1d. Klaim Purna (alumni)
+  // 1d. Pengajuan Keanggotaan (anggota aktif / purna yang sudah ada)
   // ==========================================
-  /** Anggota yang sudah punya akun mengajukan diri sebagai purna. */
-  async submitPurnaClaim(userId: string, dto: PurnaClaimDto) {
+  private static readonly CLEAR_CLAIM = {
+    claimStatus: null,
+    claimAngkatan: null,
+    claimGraduationYear: null,
+    claimNote: null,
+    claimAt: null,
+  };
+
+  /** Anggota yang sudah punya akun mengajukan angkatan & status. */
+  async submitMembershipClaim(userId: string, dto: MembershipClaimDto) {
     const user = await this.findById(userId);
     if (user.angkatan !== null) {
       throw new BadRequestException(
@@ -276,61 +289,91 @@ export class UserService implements OnApplicationBootstrap {
     return this.prisma.user.update({
       where: { id: userId },
       data: {
-        purnaClaimAngkatan: dto.angkatan,
-        purnaClaimYear: dto.graduationYear ?? null,
-        purnaClaimNote: dto.note || null,
-        purnaClaimAt: new Date(),
+        claimStatus: dto.status,
+        claimAngkatan: dto.angkatan,
+        claimGraduationYear: dto.graduationYear ?? null,
+        claimNote: dto.note || null,
+        claimAt: new Date(),
       },
       select: USER_SAFE_SELECT,
     });
   }
 
-  /** Klaim purna yang menunggu verifikasi (admin). */
-  async findPurnaClaims() {
+  /** Pengajuan yang menunggu verifikasi (admin), urut angkatan lalu waktu. */
+  async findMembershipClaims() {
     return this.prisma.user.findMany({
-      where: { purnaClaimAt: { not: null } },
-      orderBy: { purnaClaimAt: 'asc' },
+      where: { claimAt: { not: null } },
+      orderBy: [{ claimAngkatan: 'desc' }, { claimAt: 'asc' }],
       select: {
         id: true,
         name: true,
         email: true,
         phone: true,
-        angkatan: true,
-        purnaClaimAngkatan: true,
-        purnaClaimYear: true,
-        purnaClaimNote: true,
-        purnaClaimAt: true,
+        claimStatus: true,
+        claimAngkatan: true,
+        claimGraduationYear: true,
+        claimNote: true,
+        claimAt: true,
         createdAt: true,
       },
     });
   }
 
   /**
-   * Admin menyetujui (angkatan + status PURNA ditetapkan) atau menolak klaim.
-   * Keduanya mengosongkan data klaim.
+   * Admin menyetujui (angkatan + status ditetapkan, bisa dikoreksi) atau
+   * menolak pengajuan. Keduanya mengosongkan data pengajuan.
    */
-  async reviewPurnaClaim(id: string, dto: ReviewPurnaClaimDto) {
+  async reviewMembershipClaim(id: string, dto: ReviewMembershipClaimDto) {
     const user = await this.findById(id);
-    if (!user.purnaClaimAt || user.purnaClaimAngkatan === null) {
-      throw new NotFoundException('Tidak ada klaim purna untuk anggota ini');
+    if (!user.claimAt || user.claimAngkatan === null) {
+      throw new NotFoundException('Tidak ada pengajuan untuk anggota ini');
     }
-    const clearClaim = {
-      purnaClaimAngkatan: null,
-      purnaClaimYear: null,
-      purnaClaimNote: null,
-      purnaClaimAt: null,
-    };
     return this.prisma.user.update({
       where: { id },
       data: dto.approve
         ? {
-            ...clearClaim,
-            angkatan: dto.angkatan ?? user.purnaClaimAngkatan,
-            memberStatus: MemberStatus.PURNA,
+            ...UserService.CLEAR_CLAIM,
+            angkatan: dto.angkatan ?? user.claimAngkatan,
+            memberStatus:
+              dto.memberStatus ?? user.claimStatus ?? MemberStatus.AKTIF,
           }
-        : clearClaim,
+        : UserService.CLEAR_CLAIM,
       select: USER_SAFE_SELECT,
     });
+  }
+
+  /**
+   * Setujui semua pengajuan untuk satu angkatan sekaligus (masa transisi:
+   * satu angkatan bisa puluhan orang). Status mengikuti pengajuan masing-masing.
+   */
+  async approveAngkatanClaims(dto: ApproveAngkatanDto) {
+    const where = { claimAt: { not: null }, claimAngkatan: dto.angkatan };
+    const [purna, aktif] = await this.prisma.$transaction([
+      this.prisma.user.updateMany({
+        where: { ...where, claimStatus: MemberStatus.PURNA },
+        data: {
+          ...UserService.CLEAR_CLAIM,
+          angkatan: dto.angkatan,
+          memberStatus: MemberStatus.PURNA,
+        },
+      }),
+      this.prisma.user.updateMany({
+        where: {
+          ...where,
+          OR: [{ claimStatus: MemberStatus.AKTIF }, { claimStatus: null }],
+        },
+        data: {
+          ...UserService.CLEAR_CLAIM,
+          angkatan: dto.angkatan,
+          memberStatus: MemberStatus.AKTIF,
+        },
+      }),
+    ]);
+    const count = purna.count + aktif.count;
+    return {
+      message: `${count} pengajuan Angkatan ${dto.angkatan} disetujui (${aktif.count} aktif, ${purna.count} purna)`,
+      count,
+    };
   }
 
   /** Ubah status Aktif/Purna seluruh anggota satu angkatan (admin). */

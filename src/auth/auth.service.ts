@@ -57,13 +57,14 @@ export class AuthService {
         phone: dto.phone,
         bio: dto.bio,
         role,
-        // Daftar sebagai purna: klaim disimpan, angkatan & status tetap
-        // menunggu verifikasi admin.
-        ...(dto.purna && {
-          purnaClaimAngkatan: dto.purna.angkatan,
-          purnaClaimYear: dto.purna.graduationYear,
-          purnaClaimNote: dto.purna.note || null,
-          purnaClaimAt: new Date(),
+        // Anggota aktif/purna yang sudah ada: pengajuan disimpan, angkatan &
+        // status tetap menunggu verifikasi admin.
+        ...(dto.membership && {
+          claimStatus: dto.membership.status,
+          claimAngkatan: dto.membership.angkatan,
+          claimGraduationYear: dto.membership.graduationYear,
+          claimNote: dto.membership.note || null,
+          claimAt: new Date(),
         }),
       },
       select: {

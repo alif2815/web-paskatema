@@ -8,7 +8,7 @@ import {
   ValidateNested,
 } from 'class-validator';
 
-import { PurnaClaimDto } from '../../user/dto/purna-claim.dto';
+import { MembershipClaimDto } from '../../user/dto/membership-claim.dto';
 
 export class CreateAuthDto {
   @ApiProperty({
@@ -55,12 +55,12 @@ export class CreateAuthDto {
 
   @ApiProperty({
     description:
-      'Isi bila mendaftar sebagai purna (alumni). Diverifikasi admin sebelum angkatan & status Purna berlaku.',
+      'Isi bila sudah menjadi anggota (aktif atau purna). Diverifikasi admin sebelum angkatan & status berlaku. Calon anggota baru tidak mengisi ini.',
     required: false,
-    type: PurnaClaimDto,
+    type: MembershipClaimDto,
   })
   @ValidateNested()
-  @Type(() => PurnaClaimDto)
+  @Type(() => MembershipClaimDto)
   @IsOptional()
-  purna?: PurnaClaimDto;
+  membership?: MembershipClaimDto;
 }
