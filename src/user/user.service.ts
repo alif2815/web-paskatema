@@ -14,6 +14,7 @@ import {
   UpdateProfileDto,
 } from './dto/update-profile.dto';
 import type { AuthenticatedUser } from '../auth/strategy/jwt-strategy';
+import { PurnaClaimDto, ReviewPurnaClaimDto } from './dto/purna-claim.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryUserDto } from './dto/query-user.dto';
 
@@ -39,6 +40,10 @@ const USER_SAFE_SELECT = {
   linkedinUrl: true,
   instagram: true,
   profilePublic: true,
+  purnaClaimAngkatan: true,
+  purnaClaimYear: true,
+  purnaClaimNote: true,
+  purnaClaimAt: true,
   avatarId: true,
   avatar: {
     select: {
@@ -62,10 +67,29 @@ export class UserService {
   // 1. Ambil semua user dengan filter & pagination (Khusus Admin)
   // ==========================================
   async findAll(query: QueryUserDto) {
-    const { search, role, page = 1, limit = 10 } = query;
+    const {
+      search,
+      role,
+      memberStatus,
+      angkatan,
+      page = 1,
+      limit = 10,
+    } = query;
     const skip = (page - 1) * limit;
 
     const where: Prisma.UserWhereInput = {};
+
+    if (memberStatus) {
+      where.memberStatus = memberStatus;
+      // "Aktif" di sini berarti anggota terverifikasi, bukan akun yang
+      // angkatannya belum diisi (default statusnya juga AKTIF).
+      if (memberStatus === MemberStatus.AKTIF) {
+        where.angkatan = { not: null };
+      }
+    }
+    if (angkatan) {
+      where.angkatan = angkatan;
+    }
 
     // Filter berdasarkan role
     if (role) {
@@ -219,6 +243,77 @@ export class UserService {
       linkedinUrl: user.linkedinUrl,
       instagram: user.instagram,
     };
+  }
+
+  // ==========================================
+  // 1d. Klaim Purna (alumni)
+  // ==========================================
+  /** Anggota yang sudah punya akun mengajukan diri sebagai purna. */
+  async submitPurnaClaim(userId: string, dto: PurnaClaimDto) {
+    const user = await this.findById(userId);
+    if (user.angkatan !== null) {
+      throw new BadRequestException(
+        'Akun Anda sudah terverifikasi dengan angkatan. Hubungi admin bila datanya salah.',
+      );
+    }
+    return this.prisma.user.update({
+      where: { id: userId },
+      data: {
+        purnaClaimAngkatan: dto.angkatan,
+        purnaClaimYear: dto.graduationYear ?? null,
+        purnaClaimNote: dto.note || null,
+        purnaClaimAt: new Date(),
+      },
+      select: USER_SAFE_SELECT,
+    });
+  }
+
+  /** Klaim purna yang menunggu verifikasi (admin). */
+  async findPurnaClaims() {
+    return this.prisma.user.findMany({
+      where: { purnaClaimAt: { not: null } },
+      orderBy: { purnaClaimAt: 'asc' },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        angkatan: true,
+        purnaClaimAngkatan: true,
+        purnaClaimYear: true,
+        purnaClaimNote: true,
+        purnaClaimAt: true,
+        createdAt: true,
+      },
+    });
+  }
+
+  /**
+   * Admin menyetujui (angkatan + status PURNA ditetapkan) atau menolak klaim.
+   * Keduanya mengosongkan data klaim.
+   */
+  async reviewPurnaClaim(id: string, dto: ReviewPurnaClaimDto) {
+    const user = await this.findById(id);
+    if (!user.purnaClaimAt || user.purnaClaimAngkatan === null) {
+      throw new NotFoundException('Tidak ada klaim purna untuk anggota ini');
+    }
+    const clearClaim = {
+      purnaClaimAngkatan: null,
+      purnaClaimYear: null,
+      purnaClaimNote: null,
+      purnaClaimAt: null,
+    };
+    return this.prisma.user.update({
+      where: { id },
+      data: dto.approve
+        ? {
+            ...clearClaim,
+            angkatan: dto.angkatan ?? user.purnaClaimAngkatan,
+            memberStatus: MemberStatus.PURNA,
+          }
+        : clearClaim,
+      select: USER_SAFE_SELECT,
+    });
   }
 
   /** Ubah status Aktif/Purna seluruh anggota satu angkatan (admin). */

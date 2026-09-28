@@ -1,5 +1,14 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { IsEmail, IsOptional, IsString, MinLength } from 'class-validator';
+import { Type } from 'class-transformer';
+import {
+  IsEmail,
+  IsOptional,
+  IsString,
+  MinLength,
+  ValidateNested,
+} from 'class-validator';
+
+import { PurnaClaimDto } from '../../user/dto/purna-claim.dto';
 
 export class CreateAuthDto {
   @ApiProperty({
@@ -43,4 +52,15 @@ export class CreateAuthDto {
   @IsString()
   @IsOptional()
   bio?: string;
+
+  @ApiProperty({
+    description:
+      'Isi bila mendaftar sebagai purna (alumni). Diverifikasi admin sebelum angkatan & status Purna berlaku.',
+    required: false,
+    type: PurnaClaimDto,
+  })
+  @ValidateNested()
+  @Type(() => PurnaClaimDto)
+  @IsOptional()
+  purna?: PurnaClaimDto;
 }

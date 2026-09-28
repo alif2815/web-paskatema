@@ -49,6 +49,13 @@ model User {
   instagram     String?
   profilePublic Boolean  @default(false)
 
+  // Klaim purna (alumni) yang menunggu verifikasi admin. Terisi saat daftar
+  // sebagai purna atau diajukan dari /akun; dikosongkan setelah ditinjau.
+  purnaClaimAngkatan Int?
+  purnaClaimYear     Int?
+  purnaClaimNote     String?
+  purnaClaimAt       DateTime?
+
   avatarId String?
   avatar   Media?  @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: SetNull)
 

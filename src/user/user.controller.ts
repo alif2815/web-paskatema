@@ -13,6 +13,7 @@ import {
   UseInterceptors,
 } from '@nestjs/common';
 import { FileInterceptor } from '@nestjs/platform-express';
+import { Throttle } from '@nestjs/throttler';
 import {
   ApiBearerAuth,
   ApiBody,
@@ -31,6 +32,7 @@ import {
   UpdateProfileDto,
 } from './dto/update-profile.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
+import { PurnaClaimDto, ReviewPurnaClaimDto } from './dto/purna-claim.dto';
 import { OptionalJwtAuthGuard } from '../auth/guards/optional-jwt-auth.guard';
 import type { AuthenticatedUser } from '../auth/strategy/jwt-strategy';
 import { QueryUserDto } from './dto/query-user.dto';
@@ -149,6 +151,41 @@ export class UserController {
     @Req() request: { user?: AuthenticatedUser | null },
   ) {
     return this.userService.findMemberProfile(id, request.user ?? null);
+  }
+
+  /**
+   * POST /user/me/purna-claim
+   * Ajukan diri sebagai purna (alumni). Diverifikasi admin.
+   */
+  @ApiOperation({ summary: 'Ajukan klaim sebagai purna (alumni)' })
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('me/purna-claim')
+  submitPurnaClaim(@GetUser('id') userId: string, @Body() dto: PurnaClaimDto) {
+    return this.userService.submitPurnaClaim(userId, dto);
+  }
+
+  /**
+   * GET /user/purna-claims
+   * Klaim purna yang menunggu verifikasi. Sebelum GET /:id.
+   */
+  @ApiOperation({ summary: '[Admin] Daftar klaim purna menunggu verifikasi' })
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @Get('purna-claims')
+  findPurnaClaims() {
+    return this.userService.findPurnaClaims();
+  }
+
+  /**
+   * PATCH /user/:id/purna-claim
+   * Setujui atau tolak klaim purna.
+   */
+  @ApiOperation({ summary: '[Admin] Setujui/tolak klaim purna' })
+  @UseGuards(RolesGuard)
+  @Roles(Role.ADMIN)
+  @Patch(':id/purna-claim')
+  reviewPurnaClaim(@Param('id') id: string, @Body() dto: ReviewPurnaClaimDto) {
+    return this.userService.reviewPurnaClaim(id, dto);
   }
 
   /**

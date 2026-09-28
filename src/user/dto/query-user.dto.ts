@@ -1,7 +1,7 @@
 import { ApiProperty } from '@nestjs/swagger';
-import { Role } from '@prisma/client';
+import { MemberStatus, Role } from '@prisma/client';
 import { Type } from 'class-transformer';
-import { IsEnum, IsInt, IsOptional, IsString, Min } from 'class-validator';
+import { IsEnum, IsInt, IsOptional, IsString, Max, Min } from 'class-validator';
 
 export class QueryUserDto {
   @ApiProperty({
@@ -22,6 +22,23 @@ export class QueryUserDto {
   @IsEnum(Role)
   @IsOptional()
   role?: Role;
+
+  @ApiProperty({
+    description: 'Filter status keanggotaan (Aktif/Purna)',
+    enum: MemberStatus,
+    required: false,
+  })
+  @IsEnum(MemberStatus)
+  @IsOptional()
+  memberStatus?: MemberStatus;
+
+  @ApiProperty({ description: 'Filter angkatan', example: 30, required: false })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(999)
+  @IsOptional()
+  angkatan?: number;
 
   @ApiProperty({
     description: 'Halaman yang ingin ditampilkan (mulai dari 1)',
