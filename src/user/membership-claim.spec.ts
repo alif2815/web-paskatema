@@ -3,6 +3,7 @@ import { MemberStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { SettingsService } from '../settings/settings.service';
 import { UserService } from './user.service';
 
 describe('UserService membership claim', () => {
@@ -13,7 +14,13 @@ describe('UserService membership claim', () => {
     user: { findUnique, update, updateMany },
     $transaction: jest.fn(() => Promise.resolve([{ count: 2 }, { count: 5 }])),
   } as unknown as PrismaService;
-  const service = new UserService(prisma, {} as StorageService);
+  const service = new UserService(
+    prisma,
+    {} as StorageService,
+    {
+      assertClaimMatchesAngkatan: jest.fn(),
+    } as unknown as SettingsService,
+  );
 
   beforeEach(() => jest.clearAllMocks());
 

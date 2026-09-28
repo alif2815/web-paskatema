@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { SettingsService } from '../settings/settings.service';
 import {
   BulkMemberStatusDto,
   UpdateProfileDto,
@@ -74,6 +75,7 @@ export class UserService implements OnApplicationBootstrap {
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
+    private readonly settings: SettingsService,
   ) {}
 
   /** Samakan role bendahara dengan struktur saat aplikasi start. */
@@ -286,6 +288,7 @@ export class UserService implements OnApplicationBootstrap {
         'Akun Anda sudah terverifikasi dengan angkatan. Hubungi admin bila datanya salah.',
       );
     }
+    await this.settings.assertClaimMatchesAngkatan(dto.status, dto.angkatan);
     return this.prisma.user.update({
       where: { id: userId },
       data: {

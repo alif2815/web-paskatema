@@ -14,6 +14,7 @@ import { CreateAuthDto } from './dto/register.dto';
 import { LoginAuthDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateEmailDto } from './dto/update-email.dto';
+import { SettingsService } from '../settings/settings.service';
 
 /** Domain email yang wajib digunakan oleh akun ADMIN */
 const ADMIN_EMAIL_DOMAIN = '@paskatema.com';
@@ -23,6 +24,7 @@ export class AuthService {
   constructor(
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
+    private readonly settings: SettingsService,
   ) {}
 
   // =====================
@@ -43,6 +45,13 @@ export class AuthService {
 
     if (existingUser) {
       throw new ConflictException('Email sudah terdaftar');
+    }
+
+    if (dto.membership) {
+      await this.settings.assertClaimMatchesAngkatan(
+        dto.membership.status,
+        dto.membership.angkatan,
+      );
     }
 
     // Hash password

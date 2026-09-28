@@ -370,3 +370,13 @@ model ForumPost {
 
   @@index([threadId, createdAt])
 }
+
+// ==========================================
+// PENGATURAN APLIKASI (key-value, diubah admin)
+// ==========================================
+// Mis. "active_angkatan" = [33, 34, 35]: angkatan yang masih anggota aktif.
+model AppSetting {
+  key       String   @id
+  value     Json
+  updatedAt DateTime @updatedAt
+}

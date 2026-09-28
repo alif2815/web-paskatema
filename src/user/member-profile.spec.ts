@@ -3,6 +3,7 @@ import { MemberStatus, Role } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { SettingsService } from '../settings/settings.service';
 import type { AuthenticatedUser } from '../auth/strategy/jwt-strategy';
 import { UserService } from './user.service';
 
@@ -13,7 +14,13 @@ describe('UserService member profile', () => {
   const prisma = {
     user: { findFirst, findUnique, update },
   } as unknown as PrismaService;
-  const service = new UserService(prisma, {} as StorageService);
+  const service = new UserService(
+    prisma,
+    {} as StorageService,
+    {
+      assertClaimMatchesAngkatan: jest.fn(),
+    } as unknown as SettingsService,
+  );
 
   const member = (overrides: Record<string, unknown> = {}) => ({
     id: 'm1',

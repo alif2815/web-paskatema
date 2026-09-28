@@ -105,6 +105,7 @@ Kuota paket gratis ± 25 kredit/bulan (penyimpanan + bandwidth + transformasi). 
 Prinsip: anggota mendaftar sendiri, admin cukup memverifikasi.
 
 * **Jenis pendaftar di `/daftar`:** *Calon anggota baru* (lalu isi formulir rekrutmen di `/pendaftaran`), *Anggota aktif* (isi angkatan), *Purna* (isi angkatan & tahun lulus). Akun lama tanpa angkatan bisa mengajukan dari `/akun`.
+* **Angkatan aktif:** pengaturan admin (Struktur & Kepengurusan → Anggota). Saat ini **33, 34, 35**; angkatan 32 ke bawah = Purna. Anggota aktif memilih angkatan dari daftar ini saat mendaftar; pengajuan yang tidak cocok ditolak. Bisa sekaligus memperbarui status semua anggota. Diubah setiap tahun ajaran.
 * **Verifikasi:** Admin → Struktur & Kepengurusan → **Verifikasi Anggota**, dikelompokkan per angkatan dengan tombol **Setujui semua Angkatan N**; angkatan & status bisa dikoreksi per orang.
 
 | Tahap | Isi |
