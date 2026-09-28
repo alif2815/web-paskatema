@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -76,6 +80,15 @@ export class PositionService {
 
     if (!existingPosition) {
       throw new NotFoundException('Jabatan tidak ditemukan');
+    }
+
+    const used = await this.prisma.structure.count({
+      where: { positionId: id },
+    });
+    if (used > 0) {
+      throw new ConflictException(
+        `Jabatan ini masih dipakai ${used} penempatan di Struktur. Pindahkan atau hapus penempatannya dulu.`,
+      );
     }
 
     const result = await this.prisma.position.delete({

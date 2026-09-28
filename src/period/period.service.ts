@@ -1,4 +1,8 @@
-import { Injectable, NotFoundException } from '@nestjs/common';
+import {
+  ConflictException,
+  Injectable,
+  NotFoundException,
+} from '@nestjs/common';
 
 import { PrismaService } from '../prisma/prisma.service';
 
@@ -38,6 +42,10 @@ export class PeriodService {
         ...(query?.isActive !== undefined && { isActive: query.isActive }),
       },
       orderBy: { name: 'desc' },
+      // Jumlah pemakaian, untuk konfirmasi hapus di panel admin.
+      include: {
+        _count: { select: { structures: true, votingPeriods: true } },
+      },
     });
   }
 
@@ -102,9 +110,23 @@ export class PeriodService {
       throw new NotFoundException('Periode tidak ditemukan');
     }
 
-    const result = await this.prisma.period.delete({
-      where: { id },
+    // Pemilihan menyimpan riwayat suara: jangan ikut terhapus diam-diam.
+    const votings = await this.prisma.votingPeriod.findMany({
+      where: { periodId: id },
+      select: { title: true },
     });
+    if (votings.length > 0) {
+      throw new ConflictException(
+        `Periode ini dipakai pemilihan "${votings.map((v) => v.title).join('", "')}". Hapus pemilihan tersebut dulu di menu Voting.`,
+      );
+    }
+
+    // Penempatan struktur tidak berarti tanpa periodenya: ikut dihapus.
+    // Transaksi keuangan tetap ada (periodId jadi null, lihat schema).
+    const [, result] = await this.prisma.$transaction([
+      this.prisma.structure.deleteMany({ where: { periodId: id } }),
+      this.prisma.period.delete({ where: { id } }),
+    ]);
     await syncTreasurerRoles(this.prisma);
     return result;
   }
