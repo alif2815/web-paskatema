@@ -40,7 +40,7 @@ Fitur dibagi berdasarkan hak akses untuk menjaga keamanan dan kerapian operasion
 
 ### Hak Akses & Akun
 * **Tiga Role Akun:**
-  * **Anggota (`USER`):** hasil registrasi mandiri. Mengelola profil, mengunggah foto galeri ke angkatannya, dan ikut forum.
+  * **Anggota (`USER`):** hasil registrasi mandiri (calon anggota, anggota aktif, atau purna). Anggota aktif & purna mengajukan angkatan saat daftar, lalu diverifikasi admin. Mengelola profil, mengunggah foto galeri ke angkatannya, dan ikut forum.
   * **Bendahara (`BENDAHARA`):** otomatis dimiliki anggota yang **menjabat Bendahara** di Struktur periode aktif (dicabut saat jabatan diganti). Semua hak anggota, ditambah Panel Bendahara yang hanya berisi Laporan Keuangan. **Satu-satunya** role yang mencatat, mengedit, dan menghapus transaksi kas.
   * **Admin (`ADMIN`):** mengelola seluruh konten dan organisasi, mengisi angkatan anggota, dan menetapkan role (Anggota/Bendahara/Admin). Laporan keuangan hanya bisa dilihat, tidak diubah.
 * **Pemberian Role:** registrasi publik selalu menghasilkan Anggota. Admin pertama dibuat lewat `prisma/seed.ts`; admin lain ditetapkan dari panel (Struktur → Anggota). Role Bendahara tidak bisa diberikan manual, karena mengikuti jabatan di Struktur.
@@ -97,3 +97,22 @@ Sampai langkah ini selesai, semua file tetap tersimpan di server dan website ber
    Aman diulang; file lokal tidak dihapus dan tetap jadi cadangan.
 
 Kuota paket gratis ± 25 kredit/bulan (penyimpanan + bandwidth + transformasi). Video paling cepat menghabiskan kuota; pantau di dashboard Cloudinary.
+
+---
+
+## 🔄 Rencana Migrasi ke Digital
+
+Prinsip: anggota mendaftar sendiri, admin cukup memverifikasi.
+
+* **Jenis pendaftar di `/daftar`:** *Calon anggota baru* (lalu isi formulir rekrutmen di `/pendaftaran`), *Anggota aktif* (isi angkatan), *Purna* (isi angkatan & tahun lulus). Akun lama tanpa angkatan bisa mengajukan dari `/akun`.
+* **Verifikasi:** Admin → Struktur & Kepengurusan → **Verifikasi Anggota**, dikelompokkan per angkatan dengan tombol **Setujui semua Angkatan N**; angkatan & status bisa dikoreksi per orang.
+
+| Tahap | Isi |
+|---|---|
+| 1. Persiapan | Periode kepengurusan aktif, jabatan, struktur pengurus (termasuk Bendahara). Catat **saldo kas awal** sebagai satu transaksi pemasukan; buku/Excel lama jadi arsip. |
+| 2. Anggota aktif | Bagikan `/daftar?as=aktif` ke grup WA tiap angkatan, tenggat ± 2 minggu; admin verifikasi per angkatan. |
+| 3. Purna | Bagikan `/daftar?as=purna` ke grup alumni, tanpa tenggat. |
+| 4. Konten | Unggah dokumen/E-Book, berita, event, galeri penting. |
+| 5. Beralih penuh | Setelah tenggat, pendaftaran, pemilihan, dan kas hanya lewat website. |
+
+*Opsional (belum dibuat):* impor daftar anggota lama dari Excel (nama, angkatan, status, email) untuk verifikasi otomatis berdasarkan email.
