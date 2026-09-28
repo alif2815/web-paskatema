@@ -4,6 +4,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { CreatePositionDto } from './dto/create-position.dto';
 import { UpdatePositionDto } from './dto/update-position.dto';
+import { syncTreasurerRoles } from '../auth/treasurer-role';
 
 @Injectable()
 export class PositionService {
@@ -53,7 +54,7 @@ export class PositionService {
 
     const { name, level } = updatePositionDto;
 
-    return this.prisma.position.update({
+    const result = await this.prisma.position.update({
       where: {
         id,
       },
@@ -62,6 +63,8 @@ export class PositionService {
         ...(level !== undefined && { level }),
       },
     });
+    await syncTreasurerRoles(this.prisma);
+    return result;
   }
 
   async remove(id: string) {
@@ -75,10 +78,12 @@ export class PositionService {
       throw new NotFoundException('Jabatan tidak ditemukan');
     }
 
-    return this.prisma.position.delete({
+    const result = await this.prisma.position.delete({
       where: {
         id,
       },
     });
+    await syncTreasurerRoles(this.prisma);
+    return result;
   }
 }

@@ -2,7 +2,9 @@ import {
   BadRequestException,
   ConflictException,
   Injectable,
+  Logger,
   NotFoundException,
+  OnApplicationBootstrap,
 } from '@nestjs/common';
 import { MemberStatus, Prisma, Role } from '@prisma/client';
 import { randomUUID } from 'crypto';
@@ -14,6 +16,10 @@ import {
   UpdateProfileDto,
 } from './dto/update-profile.dto';
 import type { AuthenticatedUser } from '../auth/strategy/jwt-strategy';
+import {
+  holdsTreasurerPosition,
+  syncTreasurerRoles,
+} from '../auth/treasurer-role';
 import { PurnaClaimDto, ReviewPurnaClaimDto } from './dto/purna-claim.dto';
 import { UpdateRoleDto } from './dto/update-role.dto';
 import { QueryUserDto } from './dto/query-user.dto';
@@ -57,11 +63,22 @@ const USER_SAFE_SELECT = {
 } as const;
 
 @Injectable()
-export class UserService {
+export class UserService implements OnApplicationBootstrap {
+  private readonly logger = new Logger(UserService.name);
+
   constructor(
     private readonly prisma: PrismaService,
     private readonly storage: StorageService,
   ) {}
+
+  /** Samakan role bendahara dengan struktur saat aplikasi start. */
+  async onApplicationBootstrap() {
+    try {
+      await syncTreasurerRoles(this.prisma);
+    } catch (error) {
+      this.logger.warn(`Gagal sinkron role bendahara: ${String(error)}`);
+    }
+  }
 
   // ==========================================
   // 1. Ambil semua user dengan filter & pagination (Khusus Admin)
@@ -503,9 +520,30 @@ export class UserService {
       throw new BadRequestException('Tidak dapat menurunkan role akun sendiri');
     }
 
-    return this.prisma.user.update({
+    // Role Bendahara mengikuti jabatan di Struktur (lihat treasurer-role.ts),
+    // jadi tidak bisa diberikan atau dicabut manual.
+    if (dto.role === Role.BENDAHARA) {
+      throw new BadRequestException(
+        'Role Bendahara diberikan otomatis kepada anggota yang menjabat Bendahara di Struktur periode aktif',
+      );
+    }
+    if (
+      dto.role === Role.USER &&
+      (await holdsTreasurerPosition(this.prisma, id))
+    ) {
+      throw new BadRequestException(
+        'Anggota ini menjabat Bendahara di periode aktif. Ganti jabatannya di Struktur untuk mencabut akses bendahara.',
+      );
+    }
+
+    await this.prisma.user.update({
       where: { id },
       data: { role: dto.role },
+    });
+    await syncTreasurerRoles(this.prisma);
+
+    return this.prisma.user.findUniqueOrThrow({
+      where: { id },
       select: {
         id: true,
         email: true,

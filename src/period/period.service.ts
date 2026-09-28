@@ -5,6 +5,7 @@ import { PrismaService } from '../prisma/prisma.service';
 import { CreatePeriodDto } from './dto/create-period.dto';
 import { UpdatePeriodDto } from './dto/update-period.dto';
 import { QueryPeriodDto } from './dto/query-period.dto';
+import { syncTreasurerRoles } from '../auth/treasurer-role';
 
 @Injectable()
 export class PeriodService {
@@ -13,7 +14,7 @@ export class PeriodService {
   async create(createPeriodDto: CreatePeriodDto) {
     const { name, isActive = false } = createPeriodDto;
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       // kalau periode baru langsung aktif,
       // nonaktifkan periode aktif sebelumnya.
       if (isActive) {
@@ -27,6 +28,8 @@ export class PeriodService {
         data: { name, isActive },
       });
     });
+    await syncTreasurerRoles(this.prisma);
+    return result;
   }
 
   async findAll(query?: QueryPeriodDto) {
@@ -67,7 +70,7 @@ export class PeriodService {
 
     const { name, isActive } = updatePeriodDto;
 
-    return this.prisma.$transaction(async (tx) => {
+    const result = await this.prisma.$transaction(async (tx) => {
       if (isActive === true) {
         await tx.period.updateMany({
           where: {
@@ -86,6 +89,8 @@ export class PeriodService {
         },
       });
     });
+    await syncTreasurerRoles(this.prisma);
+    return result;
   }
 
   async remove(id: string) {
@@ -97,8 +102,10 @@ export class PeriodService {
       throw new NotFoundException('Periode tidak ditemukan');
     }
 
-    return this.prisma.period.delete({
+    const result = await this.prisma.period.delete({
       where: { id },
     });
+    await syncTreasurerRoles(this.prisma);
+    return result;
   }
 }

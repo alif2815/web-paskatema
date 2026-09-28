@@ -9,6 +9,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { CreateStructureDto } from './dto/create-structure.dto';
 import { UpdateStructureDto } from './dto/update-structure.dto';
+import { syncTreasurerRoles } from '../auth/treasurer-role';
 
 @Injectable()
 export class StructureService {
@@ -87,7 +88,7 @@ export class StructureService {
     await this.validateRelations(createStructureDto);
 
     try {
-      return await this.prisma.structure.create({
+      const result = await this.prisma.structure.create({
         data: {
           userId: createStructureDto.userId,
           positionId: createStructureDto.positionId,
@@ -96,6 +97,8 @@ export class StructureService {
         },
         include: this.includeRelations,
       });
+      await syncTreasurerRoles(this.prisma);
+      return result;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -171,13 +174,15 @@ export class StructureService {
     };
 
     try {
-      return await this.prisma.structure.update({
+      const result = await this.prisma.structure.update({
         where: {
           id,
         },
         data,
         include: this.includeRelations,
       });
+      await syncTreasurerRoles(this.prisma);
+      return result;
     } catch (error) {
       if (
         error instanceof Prisma.PrismaClientKnownRequestError &&
@@ -202,10 +207,12 @@ export class StructureService {
       throw new NotFoundException('Structure tidak ditemukan');
     }
 
-    return this.prisma.structure.delete({
+    const result = await this.prisma.structure.delete({
       where: {
         id,
       },
     });
+    await syncTreasurerRoles(this.prisma);
+    return result;
   }
 }

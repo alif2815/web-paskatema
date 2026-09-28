@@ -41,9 +41,9 @@ Fitur dibagi berdasarkan hak akses untuk menjaga keamanan dan kerapian operasion
 ### Hak Akses & Akun
 * **Tiga Role Akun:**
   * **Anggota (`USER`):** hasil registrasi mandiri. Mengelola profil, mengunggah foto galeri ke angkatannya, dan ikut forum.
-  * **Bendahara (`BENDAHARA`):** semua hak anggota, ditambah Panel Bendahara yang hanya berisi Laporan Keuangan. **Satu-satunya** role yang mencatat, mengedit, dan menghapus transaksi kas.
+  * **Bendahara (`BENDAHARA`):** otomatis dimiliki anggota yang **menjabat Bendahara** di Struktur periode aktif (dicabut saat jabatan diganti). Semua hak anggota, ditambah Panel Bendahara yang hanya berisi Laporan Keuangan. **Satu-satunya** role yang mencatat, mengedit, dan menghapus transaksi kas.
   * **Admin (`ADMIN`):** mengelola seluruh konten dan organisasi, mengisi angkatan anggota, dan menetapkan role (Anggota/Bendahara/Admin). Laporan keuangan hanya bisa dilihat, tidak diubah.
-* **Pemberian Role:** registrasi publik selalu menghasilkan Anggota. Admin pertama dibuat lewat `prisma/seed.ts`; role lain ditetapkan admin dari panel (Struktur → Anggota).
+* **Pemberian Role:** registrasi publik selalu menghasilkan Anggota. Admin pertama dibuat lewat `prisma/seed.ts`; admin lain ditetapkan dari panel (Struktur → Anggota). Role Bendahara tidak bisa diberikan manual, karena mengikuti jabatan di Struktur.
 * **Manajemen Profil:** Anggota dapat melakukan *login* dan mengedit data profil mereka masing-masing.
 
 ### Fitur Pengguna Umum (User)
