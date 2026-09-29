@@ -172,3 +172,29 @@ export function validateAnswers(
 
   return clean;
 }
+
+/**
+ * Perubahan schema yang aman walau form sudah punya pendaftar: pertanyaan
+ * (key, urutan, label, wajib) tetap sama, dan satu-satunya perbedaan adalah
+ * pilihan (dropdown) yang dijadikan isian teks. Jawaban lama tetap valid.
+ */
+export function isCompatibleSchemaChange(
+  oldSchema: unknown,
+  newSchema: unknown,
+): boolean {
+  const before = parseFormSchema(oldSchema);
+  const after = parseFormSchema(newSchema);
+  if (before.length !== after.length) return false;
+  return before.every((a, i) => {
+    const b = after[i];
+    if (a.key !== b.key || a.label !== b.label || a.required !== b.required) {
+      return false;
+    }
+    if (a.type === b.type) {
+      return (
+        JSON.stringify(a.options ?? []) === JSON.stringify(b.options ?? [])
+      );
+    }
+    return a.type === 'select' && (b.type === 'text' || b.type === 'textarea');
+  });
+}

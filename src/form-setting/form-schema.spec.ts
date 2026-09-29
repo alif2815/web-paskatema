@@ -1,6 +1,10 @@
 import { BadRequestException } from '@nestjs/common';
 
-import { parseFormSchema, validateAnswers } from './form-schema';
+import {
+  isCompatibleSchemaChange,
+  parseFormSchema,
+  validateAnswers,
+} from './form-schema';
 
 describe('form schema', () => {
   const schema = [
@@ -45,5 +49,41 @@ describe('form schema', () => {
     expect(() =>
       validateAnswers(schema, { nama: 'Budi', kelas: 'XII' }),
     ).toThrow(BadRequestException);
+  });
+});
+
+describe('isCompatibleSchemaChange', () => {
+  const base = [
+    { key: 'nama', label: 'Nama', type: 'text', required: true },
+    {
+      key: 'kelas',
+      label: 'Kelas',
+      type: 'select',
+      required: true,
+      options: ['X RPL 1'],
+    },
+  ];
+
+  it('mengizinkan dropdown dijadikan isian teks', () => {
+    const next = [
+      base[0],
+      { key: 'kelas', label: 'Kelas', type: 'text', required: true },
+    ];
+    expect(isCompatibleSchemaChange(base, next)).toBe(true);
+  });
+
+  it('menolak menambah pertanyaan atau mengubah label', () => {
+    expect(
+      isCompatibleSchemaChange(base, [
+        ...base,
+        { key: 'x', label: 'X', type: 'text', required: false },
+      ]),
+    ).toBe(false);
+    expect(
+      isCompatibleSchemaChange(base, [
+        { ...base[0], label: 'Nama Lengkap' },
+        base[1],
+      ]),
+    ).toBe(false);
   });
 });

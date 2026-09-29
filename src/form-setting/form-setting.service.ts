@@ -10,7 +10,7 @@ import { PrismaService } from '../prisma/prisma.service';
 
 import { CreateFormSettingDto } from './dto/create-form-setting.dto';
 import { UpdateFormSettingDto } from './dto/update-form-setting.dto';
-import { parseFormSchema } from './form-schema';
+import { isCompatibleSchemaChange, parseFormSchema } from './form-schema';
 
 @Injectable()
 export class FormSettingService {
@@ -116,9 +116,13 @@ export class FormSettingService {
       throw new NotFoundException('Form pendaftaran tidak ditemukan');
     }
 
-    // Kalau sudah ada pendaftar,
-    // schema tidak boleh diubah.
-    if (dto.schema !== undefined && existing._count.registrations > 0) {
+    // Kalau sudah ada pendaftar, schema tidak boleh diubah — kecuali
+    // perubahan aman (dropdown dijadikan isian teks), lihat form-schema.ts.
+    if (
+      dto.schema !== undefined &&
+      existing._count.registrations > 0 &&
+      !isCompatibleSchemaChange(existing.schema, dto.schema)
+    ) {
       throw new ConflictException(
         'Schema form tidak dapat diubah karena sudah memiliki pendaftar',
       );
