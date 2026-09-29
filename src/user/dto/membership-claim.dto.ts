@@ -42,8 +42,8 @@ export class MembershipClaimDto {
   graduationYear?: number;
 
   @ApiProperty({
-    description: 'Catatan untuk admin, mis. kelas, jabatan, nama panggilan',
-    example: 'XI RPL 2',
+    description: 'Catatan untuk admin, mis. jabatan atau nama panggilan',
+    example: 'Danru putri',
     required: false,
   })
   @Transform(({ value }: { value: unknown }) =>
