@@ -14,7 +14,7 @@ export class EbookService {
   constructor(private readonly prisma: PrismaService) {}
 
   async create(createEbookDto: CreateEbookDto) {
-    const { title, description, fileId } = createEbookDto;
+    const { title, description, fileId, category } = createEbookDto;
 
     const file = await this.prisma.media.findUnique({
       where: {
@@ -37,6 +37,7 @@ export class EbookService {
         title,
         description,
         fileId,
+        ...(category && { category }),
       },
       include: {
         file: true,
@@ -46,9 +47,8 @@ export class EbookService {
 
   async findAll() {
     return this.prisma.eBook.findMany({
-      orderBy: {
-        createdAt: 'desc',
-      },
+      // AD/ART dulu (urutan enum), lalu terbaru.
+      orderBy: [{ category: 'asc' }, { createdAt: 'desc' }],
       include: {
         file: true,
       },
@@ -83,7 +83,7 @@ export class EbookService {
       throw new NotFoundException('EBook tidak ditemukan');
     }
 
-    const { title, description, fileId } = updateEbookDto;
+    const { title, description, fileId, category } = updateEbookDto;
 
     if (fileId) {
       const file = await this.prisma.media.findUnique({
@@ -111,6 +111,7 @@ export class EbookService {
           description,
         }),
         ...(fileId !== undefined && { fileId }),
+        ...(category !== undefined && { category }),
       },
       include: {
         file: true,

@@ -145,12 +145,21 @@ model Event {
   updatedAt DateTime @updatedAt
 }
 
+// Kategori dokumen di Pusat Administrasi; AD/ART ditampilkan paling atas.
+enum DocumentCategory {
+  AD_ART
+  PERATURAN
+  MATERI
+  LAINNYA
+}
+
 model EBook {
-  id          String  @id @default(uuid())
+  id          String           @id @default(uuid())
   title       String
-  description String? @db.Text
+  description String?          @db.Text
+  category    DocumentCategory @default(MATERI)
   fileId      String
-  file        Media   @relation(fields: [fileId], references: [id])
+  file        Media            @relation(fields: [fileId], references: [id])
 
   createdAt DateTime @default(now())
 }
