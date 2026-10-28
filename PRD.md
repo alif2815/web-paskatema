@@ -46,8 +46,18 @@ Fitur dibagi berdasarkan hak akses untuk menjaga keamanan dan kerapian operasion
 * **Pemberian Role:** registrasi publik selalu menghasilkan Anggota. Admin pertama dibuat lewat `prisma/seed.ts`; admin lain ditetapkan dari panel (Struktur → Anggota). Role Bendahara tidak bisa diberikan manual, karena mengikuti jabatan di Struktur.
 * **Manajemen Profil:** Anggota dapat melakukan *login* dan mengedit data profil mereka masing-masing.
 
+### Siapa yang Menentukan Role
+| Role | Ditentukan oleh | Caranya |
+|---|---|---|
+| Anggota | Otomatis | Semua akun yang mendaftar sendiri di `/daftar`. |
+| Bendahara | Admin, lewat jabatan | Menempatkan anggota di jabatan "Bendahara" pada Struktur periode aktif; role diberikan & dicabut otomatis. |
+| Admin | Admin lain | Struktur & Kepengurusan → Anggota → edit → Role: Admin. |
+| Admin pertama | Operator server | `npx prisma db seed` di VPS (ADMIN_EMAIL & ADMIN_PASSWORD); juga untuk mengatur ulang password admin. |
+
+Status Aktif/Purna bukan role (diatur lewat Verifikasi Anggota & pengaturan Angkatan Aktif). Setelah role berubah, pengguna perlu logout–login agar menunya berubah.
+
 ### Fitur Pengguna Umum (User)
-* **Pendaftaran Anggota Dinamis:** *User* dapat mendaftar menjadi anggota Paskatema melalui formulir yang telah disediakan.
+* **Pendaftaran Anggota Dinamis:** formulir rekrutmen di `/pendaftaran` **khusus calon anggota baru**. Anggota yang sudah punya angkatan (atau sedang mengajukan verifikasi) tidak bisa mengisinya; halaman menampilkan arahan ke `/daftar` untuk anggota aktif & purna di semua ukuran layar. Setelah ada pendaftar, pertanyaan formulir terkunci kecuali dihapus, dijadikan opsional, atau dropdown dijadikan isian teks.
 * **Sistem Voting:** Terintegrasi di halaman Struktur, memungkinkan *user* untuk memberikan suara dalam pemilihan Komandan dan Wakil Komandan periode selanjutnya.
 * **Galeri per Angkatan:** Anggota mengunggah foto & video ke galeri angkatannya sendiri dan mengelola miliknya.
 * **Profil Anggota (Aktif/Purna):** Jaringan ala LinkedIn untuk anggota dan alumni.
@@ -117,3 +127,11 @@ Prinsip: anggota mendaftar sendiri, admin cukup memverifikasi.
 | 5. Beralih penuh | Setelah tenggat, pendaftaran, pemilihan, dan kas hanya lewat website. |
 
 *Opsional (belum dibuat):* impor daftar anggota lama dari Excel (nama, angkatan, status, email) untuk verifikasi otomatis berdasarkan email.
+
+---
+
+## 🛠️ Teknis
+
+* **Runtime:** Node.js 24 LTS (image Docker `node:24-alpine`, `.nvmrc`, `engines` di `package.json`).
+* **Sesi login:** token 7 hari, tersimpan di browser dan berlaku di semua tab. Halaman login saat sudah masuk menampilkan pilihan lanjut atau ganti akun.
+* **Hapus data struktur:** menghapus periode ikut menghapus penempatan pengurusnya (ditolak bila dipakai pemilihan); menghapus jabatan ditolak selama masih dipakai di Struktur.
