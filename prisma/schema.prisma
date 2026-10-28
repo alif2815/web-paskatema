@@ -79,6 +79,8 @@ model User {
   forumPosts           ForumPost[]
   opportunities        Opportunity[]
   passwordResetTokens  PasswordResetToken[]
+  paymentsMade         PaymentRequest[]     @relation("PaymentPayer")
+  paymentsConfirmed    PaymentRequest[]     @relation("PaymentConfirmer")
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -323,6 +325,7 @@ enum TransactionType {
 
 model Transaction {
   id          String          @id @default(uuid())
+  payment     PaymentRequest?
   // Nominal dalam Rupiah, tanpa desimal (tidak ada pecahan sen di kas organisasi ini).
   amount      Int
   date        DateTime
@@ -439,4 +442,40 @@ model PasswordResetToken {
   createdAt DateTime  @default(now())
 
   @@index([userId])
+}
+
+// ==========================================
+// PEMBAYARAN QRIS DENGAN KODE UNIK
+// ==========================================
+// Nominal = nominal dasar + kode unik (1..999) supaya bendahara bisa
+// mengenali pembayar dari mutasi QRIS. Dikonfirmasi manual oleh bendahara;
+// konfirmasi otomatis membuat transaksi pemasukan.
+enum PaymentStatus {
+  PENDING
+  PAID
+  CANCELLED
+}
+
+model PaymentRequest {
+  id           String        @id @default(uuid())
+  baseAmount   Int
+  uniqueCode   Int
+  totalAmount  Int
+  description  String
+  payerName    String
+  payerContact String?
+  status       PaymentStatus @default(PENDING)
+  expiresAt    DateTime
+
+  payerId       String?
+  payer         User?        @relation("PaymentPayer", fields: [payerId], references: [id], onDelete: SetNull)
+  confirmedById String?
+  confirmedBy   User?        @relation("PaymentConfirmer", fields: [confirmedById], references: [id], onDelete: SetNull)
+  transactionId String?      @unique
+  transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  createdAt DateTime  @default(now())
+  paidAt    DateTime?
+
+  @@index([status, totalAmount])
 }

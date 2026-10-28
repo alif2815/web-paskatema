@@ -22,6 +22,16 @@ export class QueryTransactionDto {
   type?: TransactionType;
 
   @ApiProperty({
+    description:
+      'MANUAL = dicatat bendahara; OTOMATIS = dari pembayaran QRIS yang dikonfirmasi',
+    enum: ['MANUAL', 'OTOMATIS'],
+    required: false,
+  })
+  @IsEnum(['MANUAL', 'OTOMATIS'])
+  @IsOptional()
+  source?: 'MANUAL' | 'OTOMATIS';
+
+  @ApiProperty({
     description: 'Filter berdasarkan periode kepengurusan',
     required: false,
   })

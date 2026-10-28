@@ -15,6 +15,8 @@ export class TransactionService {
     period: { select: { id: true, name: true } },
     event: { select: { id: true, title: true } },
     createdBy: { select: { id: true, name: true } },
+    // Ada = transaksi otomatis dari pembayaran QRIS yang dikonfirmasi.
+    payment: { select: { id: true, uniqueCode: true, payerName: true } },
   };
 
   private async validateRelations(data: {
@@ -45,10 +47,16 @@ export class TransactionService {
   private buildWhere(
     query: Pick<
       QueryTransactionDto,
-      'type' | 'periodId' | 'eventId' | 'dateFrom' | 'dateTo'
+      'type' | 'periodId' | 'eventId' | 'dateFrom' | 'dateTo' | 'source'
     >,
   ): Prisma.TransactionWhereInput {
     const where: Prisma.TransactionWhereInput = {};
+
+    if (query.source === 'OTOMATIS') {
+      where.payment = { isNot: null };
+    } else if (query.source === 'MANUAL') {
+      where.payment = { is: null };
+    }
 
     if (query.type) {
       where.type = query.type;
