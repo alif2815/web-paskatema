@@ -42,6 +42,23 @@ export class RegistrationService {
       );
     }
 
+    // 1b. Formulir rekrutmen khusus calon anggota baru. Anggota yang sudah
+    //     punya angkatan (atau sedang mengajukan) tidak perlu mengisinya.
+    const applicant = await this.prisma.user.findUnique({
+      where: { id: userId },
+      select: { angkatan: true, claimAt: true, claimAngkatan: true },
+    });
+    if (applicant?.angkatan != null) {
+      throw new BadRequestException(
+        `Anda sudah tercatat sebagai anggota Angkatan ${applicant.angkatan}. Formulir ini khusus calon anggota baru.`,
+      );
+    }
+    if (applicant?.claimAt) {
+      throw new BadRequestException(
+        `Pengajuan Anda sebagai anggota Angkatan ${applicant.claimAngkatan} sedang diverifikasi admin. Formulir ini khusus calon anggota baru.`,
+      );
+    }
+
     // 2. Cegah double-registration
     const existing = await this.prisma.registration.findFirst({
       where: { userId, formId: dto.formId },

@@ -72,6 +72,22 @@ describe('isCompatibleSchemaChange', () => {
     expect(isCompatibleSchemaChange(base, next)).toBe(true);
   });
 
+  it('mengizinkan menghapus pertanyaan dan menjadikannya opsional', () => {
+    expect(isCompatibleSchemaChange(base, [base[0]])).toBe(true);
+    expect(
+      isCompatibleSchemaChange(base, [
+        { ...base[0], required: false },
+        base[1],
+      ]),
+    ).toBe(true);
+  });
+
+  it('menolak mengurutkan ulang atau menjadikan opsional sebagai wajib', () => {
+    expect(isCompatibleSchemaChange(base, [base[1], base[0]])).toBe(false);
+    const optional = [{ ...base[0], required: false }, base[1]];
+    expect(isCompatibleSchemaChange(optional, base)).toBe(false);
+  });
+
   it('menolak menambah pertanyaan atau mengubah label', () => {
     expect(
       isCompatibleSchemaChange(base, [

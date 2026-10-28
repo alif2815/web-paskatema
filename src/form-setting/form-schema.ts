@@ -174,9 +174,12 @@ export function validateAnswers(
 }
 
 /**
- * Perubahan schema yang aman walau form sudah punya pendaftar: pertanyaan
- * (key, urutan, label, wajib) tetap sama, dan satu-satunya perbedaan adalah
- * pilihan (dropdown) yang dijadikan isian teks. Jawaban lama tetap valid.
+ * Perubahan schema yang aman walau form sudah punya pendaftar (jawaban lama
+ * tetap tersimpan dan tetap valid):
+ * - menghapus pertanyaan,
+ * - menjadikan pertanyaan wajib menjadi opsional,
+ * - menjadikan pilihan (dropdown) isian teks.
+ * Menambah, mengurutkan ulang, atau mengganti label pertanyaan tidak boleh.
  */
 export function isCompatibleSchemaChange(
   oldSchema: unknown,
@@ -184,17 +187,27 @@ export function isCompatibleSchemaChange(
 ): boolean {
   const before = parseFormSchema(oldSchema);
   const after = parseFormSchema(newSchema);
-  if (before.length !== after.length) return false;
-  return before.every((a, i) => {
-    const b = after[i];
-    if (a.key !== b.key || a.label !== b.label || a.required !== b.required) {
+
+  // Pertanyaan yang tersisa harus pertanyaan lama, dengan urutan yang sama.
+  let cursor = 0;
+  for (const b of after) {
+    while (cursor < before.length && before[cursor].key !== b.key) cursor++;
+    if (cursor === before.length) return false;
+    const a = before[cursor];
+    cursor++;
+
+    if (a.label !== b.label) return false;
+    if (!a.required && b.required) return false;
+    if (a.type === b.type) {
+      if (JSON.stringify(a.options ?? []) !== JSON.stringify(b.options ?? [])) {
+        return false;
+      }
+    } else if (!(
+      a.type === 'select' &&
+      (b.type === 'text' || b.type === 'textarea')
+    )) {
       return false;
     }
-    if (a.type === b.type) {
-      return (
-        JSON.stringify(a.options ?? []) === JSON.stringify(b.options ?? [])
-      );
-    }
-    return a.type === 'select' && (b.type === 'text' || b.type === 'textarea');
-  });
+  }
+  return true;
 }
