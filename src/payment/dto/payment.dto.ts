@@ -6,6 +6,7 @@ import {
   IsInt,
   IsOptional,
   IsString,
+  IsUUID,
   Max,
   MaxLength,
   Min,
@@ -16,22 +17,48 @@ const trim = ({ value }: { value: unknown }) =>
   typeof value === 'string' ? value.trim() : value;
 
 export class CreatePaymentDto {
-  @ApiProperty({
-    description: 'Nominal dasar (Rupiah); kode unik ditambahkan otomatis',
+  @ApiPropertyOptional({
+    description:
+      'Nominal dasar (Rupiah); kode unik ditambahkan otomatis. Diabaikan untuk pembelian merchandise (dihitung dari harga).',
     example: 50000,
   })
   @Type(() => Number)
   @IsInt()
   @Min(1000)
   @Max(10_000_000)
-  amount!: number;
+  @IsOptional()
+  amount?: number;
 
-  @ApiProperty({ example: 'Iuran kas Oktober' })
+  @ApiPropertyOptional({
+    example: 'Iuran kas Oktober',
+    description: 'Wajib bila bukan pembelian merchandise',
+  })
   @Transform(trim)
   @IsString()
   @MinLength(3)
   @MaxLength(150)
-  description!: string;
+  @IsOptional()
+  description?: string;
+
+  @ApiPropertyOptional({ description: 'Pembelian merchandise: ID produk' })
+  @IsUUID()
+  @IsOptional()
+  productId?: string;
+
+  @ApiPropertyOptional({ example: 1 })
+  @Type(() => Number)
+  @IsInt()
+  @Min(1)
+  @Max(50)
+  @IsOptional()
+  quantity?: number;
+
+  @ApiPropertyOptional({ example: 'L' })
+  @Transform(trim)
+  @IsString()
+  @MaxLength(30)
+  @IsOptional()
+  productOption?: string;
 
   @ApiProperty({ example: 'Sari Dewi' })
   @Transform(trim)

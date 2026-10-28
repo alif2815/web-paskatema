@@ -104,6 +104,7 @@ model Media {
   newsCovers      News[]
   eventPosters    Event[]        @relation("EventPoster")
   eventVideos     Event[]        @relation("EventVideo")
+  productImages   Product[]      @relation("ProductImage")
   achievements    Achievement[]
   eBooks          EBook[]
   candidatePhotos Candidate[]
@@ -474,8 +475,35 @@ model PaymentRequest {
   transactionId String?      @unique
   transaction   Transaction? @relation(fields: [transactionId], references: [id], onDelete: SetNull)
 
+  // Terisi bila pembayaran ini pembelian merchandise.
+  productId     String?
+  product       Product? @relation(fields: [productId], references: [id], onDelete: SetNull)
+  quantity      Int?
+  productOption String?
+
   createdAt DateTime  @default(now())
   paidAt    DateTime?
 
   @@index([status, totalAmount])
+}
+
+// ==========================================
+// MERCHANDISE
+// ==========================================
+model Product {
+  id          String           @id @default(uuid())
+  name        String
+  description String?          @db.Text
+  price       Int
+  // null = tanpa batas stok (mis. pre-order).
+  stock       Int?
+  // Pilihan, mis. ukuran kaos ["S", "M", "L", "XL"]; kosong = tanpa pilihan.
+  options     String[]         @default([])
+  isActive    Boolean          @default(true)
+  imageId     String?
+  image       Media?           @relation("ProductImage", fields: [imageId], references: [id], onDelete: SetNull)
+  payments    PaymentRequest[]
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 }

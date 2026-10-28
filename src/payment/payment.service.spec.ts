@@ -17,12 +17,16 @@ describe('PaymentService', () => {
   const findUnique = jest.fn();
   const txCreate = jest.fn(() => ({ id: 'trx1' }));
   const txUpdate = jest.fn((args: unknown) => args);
+  const productFind = jest.fn();
+  const productUpdate = jest.fn();
   const prisma = {
     paymentRequest: { findMany, create, findUnique, update: jest.fn() },
+    product: { findUnique: productFind },
     $transaction: jest.fn((fn: (tx: unknown) => unknown) =>
       fn({
         transaction: { create: txCreate },
         paymentRequest: { update: txUpdate },
+        product: { findUnique: productFind, update: productUpdate },
       }),
     ),
   } as unknown as PrismaService;
@@ -95,5 +99,62 @@ describe('PaymentService', () => {
     await expect(
       service.confirm('p1', { id: 'b1' } as AuthenticatedUser),
     ).rejects.toBeInstanceOf(BadRequestException);
+  });
+
+  describe('merchandise', () => {
+    const kaos = {
+      id: 'k1',
+      name: 'Kaos Paskatema',
+      price: 85000,
+      stock: 3,
+      options: ['M', 'L'],
+      isActive: true,
+    };
+    const buyer = {
+      payerName: 'Sari',
+      productId: 'k1',
+      quantity: 2,
+      productOption: 'L',
+    };
+
+    it('harga dihitung di server dari produk (nominal dari browser diabaikan)', async () => {
+      productFind.mockResolvedValue(kaos);
+      findMany.mockResolvedValue([]);
+      const result = (await service.create(
+        { ...buyer, amount: 1000 },
+        null,
+      )) as unknown as Record<string, unknown>;
+      expect(result.baseAmount).toBe(170000);
+      expect(result.description).toBe('Merchandise: Kaos Paskatema (L) ×2');
+    });
+
+    it('menolak bila stok kurang atau pilihan tidak valid', async () => {
+      productFind.mockResolvedValue(kaos);
+      await expect(
+        service.create({ ...buyer, quantity: 5 }, null),
+      ).rejects.toBeInstanceOf(BadRequestException);
+      await expect(
+        service.create({ ...buyer, productOption: 'XXL' }, null),
+      ).rejects.toBeInstanceOf(BadRequestException);
+    });
+
+    it('konfirmasi lunas mengurangi stok', async () => {
+      findUnique.mockResolvedValue({
+        id: 'p2',
+        status: PaymentStatus.PENDING,
+        totalAmount: 170045,
+        uniqueCode: 45,
+        description: 'Merchandise: Kaos Paskatema (L) ×2',
+        payerName: 'Sari',
+        productId: 'k1',
+        quantity: 2,
+      });
+      productFind.mockResolvedValue(kaos);
+      await service.confirm('p2', { id: 'b1' } as AuthenticatedUser);
+      expect(productUpdate).toHaveBeenCalledWith({
+        where: { id: 'k1' },
+        data: { stock: { decrement: 2 } },
+      });
+    });
   });
 });
