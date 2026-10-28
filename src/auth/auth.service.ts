@@ -200,6 +200,12 @@ export class AuthService {
       throw new UnauthorizedException('User tidak ditemukan');
     }
 
+    // Wajib password saat ini: perangkat yang tertinggal dalam keadaan login
+    // tidak boleh bisa mengambil alih akun dengan mengganti email.
+    if (!(await bcrypt.compare(dto.password, currentUser.password))) {
+      throw new BadRequestException('Password tidak sesuai');
+    }
+
     // Validasi domain email berdasarkan role
     if (currentUser.role === Role.ADMIN) {
       if (!dto.email.endsWith(ADMIN_EMAIL_DOMAIN)) {

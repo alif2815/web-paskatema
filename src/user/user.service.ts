@@ -11,6 +11,7 @@ import { randomUUID } from 'crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { StorageService } from '../storage/storage.service';
+import { normalizePhone, similarNames } from './duplicate-member';
 import { SettingsService } from '../settings/settings.service';
 import {
   BulkMemberStatusDto,
@@ -307,7 +308,7 @@ export class UserService implements OnApplicationBootstrap {
 
   /** Pengajuan yang menunggu verifikasi (admin), urut angkatan lalu waktu. */
   async findMembershipClaims() {
-    return this.prisma.user.findMany({
+    const claims = await this.prisma.user.findMany({
       where: { claimAt: { not: null } },
       orderBy: [{ claimAngkatan: 'desc' }, { claimAt: 'asc' }],
       select: {
@@ -322,6 +323,66 @@ export class UserService implements OnApplicationBootstrap {
         claimAt: true,
         createdAt: true,
       },
+    });
+    if (claims.length === 0) return [];
+
+    // Pembanding: anggota terverifikasi di angkatan yang sama, plus semua
+    // akun dengan nomor HP yang sama.
+    const angkatanList = [
+      ...new Set(claims.map((c) => c.claimAngkatan).filter((n) => n !== null)),
+    ];
+    const verified = await this.prisma.user.findMany({
+      where: {
+        OR: [
+          { angkatan: { in: angkatanList } },
+          { phone: { not: null }, angkatan: { not: null } },
+        ],
+      },
+      select: {
+        id: true,
+        name: true,
+        email: true,
+        phone: true,
+        angkatan: true,
+      },
+    });
+
+    return claims.map((claim) => {
+      const phone = normalizePhone(claim.phone);
+      const matches = [
+        ...verified.map((u) => ({ ...u, kind: 'verified' as const })),
+        ...claims
+          .filter((c) => c.id !== claim.id)
+          .map((c) => ({
+            ...c,
+            angkatan: c.claimAngkatan,
+            kind: 'pending' as const,
+          })),
+      ]
+        .map((other) => {
+          const reasons: string[] = [];
+          if (
+            other.angkatan === claim.claimAngkatan &&
+            similarNames(other.name, claim.name)
+          ) {
+            reasons.push('nama mirip');
+          }
+          if (phone && normalizePhone(other.phone) === phone) {
+            reasons.push('no. HP sama');
+          }
+          return reasons.length
+            ? {
+                id: other.id,
+                name: other.name,
+                email: other.email,
+                angkatan: other.angkatan,
+                kind: other.kind,
+                reasons,
+              }
+            : null;
+        })
+        .filter((m) => m !== null);
+      return { ...claim, possibleDuplicates: matches };
     });
   }
 
