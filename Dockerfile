@@ -4,7 +4,7 @@
 # Stage 1: build — install semua dependency (termasuk dev), generate
 # Prisma Client, compile TypeScript ke JavaScript.
 ########################################
-FROM node:22-alpine AS builder
+FROM node:24-alpine AS builder
 
 WORKDIR /app
 
@@ -23,7 +23,7 @@ RUN npm run build
 # deploy` saat container start, tanpa perlu install ulang / prisma
 # generate ulang di sini (Prisma Client hasil generate ikut ke-copy).
 ########################################
-FROM node:22-alpine AS runner
+FROM node:24-alpine AS runner
 
 ENV NODE_ENV=production
 
