@@ -1,7 +1,7 @@
 import { Injectable, Logger } from '@nestjs/common';
 import { v2 as cloudinary } from 'cloudinary';
 import { promises as fs } from 'fs';
-import { join } from 'path';
+import { basename, join } from 'path';
 
 export interface StoredImage {
   /** URL publik gambar. */
@@ -14,14 +14,17 @@ export interface StoredImage {
 export interface StoredFileRef {
   url: string;
   publicId: string | null;
-  /** Dipakai untuk memilih resource_type Cloudinary (video vs gambar). */
+  /** Dipakai untuk memilih resource_type Cloudinary (gambar/video/dokumen). */
   mimeType?: string;
 }
 
-export type ResourceType = 'image' | 'video';
+export type ResourceType = 'image' | 'video' | 'raw';
 
 export function resourceTypeFor(mimeType: string | undefined): ResourceType {
-  return mimeType?.startsWith('video/') ? 'video' : 'image';
+  if (mimeType?.startsWith('video/')) return 'video';
+  if (mimeType?.startsWith('image/')) return 'image';
+  // Dokumen (PDF E-Book, dsb.): disimpan apa adanya sebagai file "raw".
+  return mimeType ? 'raw' : 'image';
 }
 
 const LOCAL_URL_PREFIX = '/api/uploads/';
@@ -33,7 +36,8 @@ const LOCAL_URL_PREFIX = '/api/uploads/';
  * baru otomatis diunggah ke Cloudinary. Foto lama yang sudah tersimpan lokal
  * tetap berfungsi — URL-nya tidak berubah.
  *
- * Gambar dan video lewat sini; PDF (E-Book) tetap disimpan lokal.
+ * Semua file (gambar, video, dokumen PDF) lewat sini. Isi berita (.md)
+ * tetap di server (lihat NewsFileService).
  */
 @Injectable()
 export class StorageService {
@@ -166,6 +170,11 @@ export class StorageService {
     const options = {
       folder: `${this.folder}/${subfolder}`,
       resource_type: resourceType,
+      // File raw tidak punya konversi format: public_id memakai nama file
+      // (uuid + ekstensi) supaya URL-nya berakhiran .pdf dan terbuka benar.
+      ...(resourceType === 'raw' && {
+        public_id: basename(path),
+      }),
     };
     const result =
       resourceType === 'video'
@@ -190,7 +199,11 @@ export class StorageService {
           )
         : await cloudinary.uploader.upload(path, options);
     return {
-      url: this.optimizedUrl(result.secure_url),
+      // f_auto,q_auto hanya untuk gambar/video; file raw diantar apa adanya.
+      url:
+        resourceType === 'raw'
+          ? result.secure_url
+          : this.optimizedUrl(result.secure_url),
       publicId: result.public_id,
     };
   }

@@ -81,7 +81,7 @@ Status Aktif/Purna bukan role (diatur lewat Verifikasi Anggota & pengaturan Angk
 * **Manajemen Anggota & Role:** Admin mengisi angkatan anggota dan menetapkan role Anggota/Bendahara/Admin.
 * **Moderasi Forum:** Sematkan, kunci, dan hapus topik/balasan.
 * **Status Anggota:** Menetapkan status Aktif/Purna per anggota atau untuk satu angkatan sekaligus.
-* **Media / Document Manager:** Sistem penyimpanan *file* terpusat. Foto (≤ 5 MB) dan video (MP4/WEBM/MOV, ≤ 100 MB) disimpan di Cloudinary bila dikonfigurasi, selain itu lokal di `uploads/`. PDF E-Book dan isi berita tetap di server. Admin dapat mengunggah dan menyimpan foto dokumentasi di *server*. Saat membuat berita atau *event* baru, admin tinggal memilih gambar dari galeri yang sudah ada tanpa harus mencari ulang di *device* lokal (mendukung *upload* langsung juga).
+* **Media / Document Manager:** Sistem penyimpanan *file* terpusat. Foto (≤ 5 MB), video (MP4/WEBM/MOV, ≤ 100 MB), dan PDF (E-Book) disimpan di Cloudinary bila dikonfigurasi, selain itu lokal di `uploads/`. Isi berita (.md) tetap di server. Admin dapat mengunggah dan menyimpan foto dokumentasi di *server*. Saat membuat berita atau *event* baru, admin tinggal memilih gambar dari galeri yang sudah ada tanpa harus mencari ulang di *device* lokal (mendukung *upload* langsung juga).
 * **Form Builder Dinamis:** Admin dapat mengatur dan memodifikasi *field* (isian) pada formulir pendaftaran anggota baru secara dinamis untuk ditampilkan di *Front-End*.
 * **URL Shortener:** Fitur bawaan untuk mempersingkat tautan (*link*) guna memudahkan penyebaran informasi ke anggota atau publik.
 

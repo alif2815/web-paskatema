@@ -1,12 +1,12 @@
 /**
- * Pindahkan foto & video lama dari uploads/ ke Cloudinary (sekali jalan).
+ * Pindahkan foto, video, dan dokumen lama dari uploads/ ke Cloudinary (sekali jalan).
  *
  * Untuk setiap record Media yang masih lokal (publicId null, URL berisi
- * /api/uploads/) dan bertipe gambar/video: file diunggah ke Cloudinary, lalu
+ * /api/uploads/): file diunggah ke Cloudinary, lalu
  * url + publicId di database diperbarui. Semua relasi (avatar, cover berita,
  * galeri, struktur, dst.) menunjuk ke record Media, jadi ikut berpindah.
  *
- * - PDF (E-Book) dilewati: tetap lokal.
+ * - PDF (E-Book) ikut dipindah sebagai file raw.
  * - File lokal TIDAK dihapus (tetap jadi cadangan); hapus manual bila yakin.
  * - Aman dijalankan ulang: yang sudah pindah dilewati.
  *
@@ -39,10 +39,6 @@ async function main() {
       where: {
         publicId: null,
         url: { contains: LOCAL_URL_PREFIX },
-        OR: [
-          { mimeType: { startsWith: 'image/' } },
-          { mimeType: { startsWith: 'video/' } },
-        ],
       },
       orderBy: { createdAt: 'asc' },
     });
@@ -66,12 +62,10 @@ async function main() {
       }
 
       const resourceType = resourceTypeFor(item.mimeType);
-      // Subfolder Cloudinary mengikuti folder lokal (mis. avatars/), default media/video.
+      // Subfolder Cloudinary mengikuti folder lokal (mis. avatars/), default per jenis.
       const subfolder = relative.includes('/')
         ? relative.split('/')[0]
-        : resourceType === 'video'
-          ? 'video'
-          : 'media';
+        : { video: 'video', image: 'media', raw: 'documents' }[resourceType];
 
       if (dryRun) {
         console.log(`  [akan dipindah] ${relative} -> ${subfolder}/`);

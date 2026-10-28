@@ -198,6 +198,37 @@ describe('StorageService', () => {
       });
     });
 
+    it('uploads PDFs as raw files without image transformations', async () => {
+      const temp = join(tmp, 'uploads', 'doc-1.pdf');
+      writeFileSync(temp, 'pdf');
+      upload.mockResolvedValue({
+        secure_url:
+          'https://res.cloudinary.com/demo/raw/upload/v1/paskatema/documents/doc-1.pdf',
+        public_id: 'paskatema/documents/doc-1.pdf',
+      });
+      const service = new StorageService();
+
+      const result = await service.saveDiskFile(
+        {
+          filename: 'doc-1.pdf',
+          path: temp,
+          mimetype: 'application/pdf',
+        } as Express.Multer.File,
+        'https://paskatema.test',
+        'documents',
+      );
+      expect(upload).toHaveBeenCalledWith(
+        temp,
+        expect.objectContaining({
+          folder: 'paskatema/documents',
+          resource_type: 'raw',
+          public_id: 'doc-1.pdf',
+        }),
+      );
+      expect(result.url).not.toContain('f_auto');
+      expect(existsSync(temp)).toBe(false);
+    });
+
     it('uploads videos with upload_large and deletes them as video', async () => {
       const temp = join(tmp, 'uploads', 'v.mp4');
       writeFileSync(temp, 'vid');
