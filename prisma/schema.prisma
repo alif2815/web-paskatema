@@ -457,8 +457,15 @@ enum PaymentStatus {
   CANCELLED
 }
 
+enum PaymentKind {
+  PEMBAYARAN
+  DONASI
+  MERCHANDISE
+}
+
 model PaymentRequest {
   id           String        @id @default(uuid())
+  kind         PaymentKind   @default(PEMBAYARAN)
   baseAmount   Int
   uniqueCode   Int
   totalAmount  Int

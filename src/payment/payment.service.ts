@@ -5,7 +5,7 @@ import {
   NotFoundException,
   ServiceUnavailableException,
 } from '@nestjs/common';
-import { PaymentStatus, TransactionType } from '@prisma/client';
+import { PaymentKind, PaymentStatus, TransactionType } from '@prisma/client';
 import { randomInt } from 'crypto';
 
 import { PrismaService } from '../prisma/prisma.service';
@@ -14,6 +14,12 @@ import type { AuthenticatedUser } from '../auth/strategy/jwt-strategy';
 import { CreatePaymentDto, QueryPaymentDto } from './dto/payment.dto';
 
 const VALID_HOURS = 24;
+
+const KIND_LABEL: Record<PaymentKind, string> = {
+  PEMBAYARAN: 'Pembayaran',
+  DONASI: 'Donasi',
+  MERCHANDISE: 'Merchandise',
+};
 
 /** Field yang aman ditampilkan ke pembayar (tanpa kontak orang lain). */
 const PUBLIC_SELECT = {
@@ -27,6 +33,7 @@ const PUBLIC_SELECT = {
   expiresAt: true,
   createdAt: true,
   paidAt: true,
+  kind: true,
   quantity: true,
   productOption: true,
   product: { select: { id: true, name: true } },
@@ -76,10 +83,11 @@ export class PaymentService {
         uniqueCode: code,
         totalAmount: order.amount + code,
         description: order.description,
+        kind: order.kind,
         productId: order.productId,
         quantity: order.quantity,
         productOption: order.productOption,
-        payerName: dto.payerName,
+        payerName: order.payerName,
         payerContact: dto.payerContact || null,
         payerId: user?.id ?? null,
         expiresAt: new Date(now.getTime() + VALID_HOURS * 3600_000),
@@ -93,6 +101,24 @@ export class PaymentService {
    * harga produk (nominal dari browser diabaikan) dan stok dicek.
    */
   private async resolveOrder(dto: CreatePaymentDto) {
+    const payerName = dto.payerName?.trim() ?? '';
+    if (dto.kind === 'DONASI' && !dto.productId) {
+      if (!dto.amount) {
+        throw new BadRequestException('Nominal donasi wajib diisi');
+      }
+      return {
+        kind: PaymentKind.DONASI,
+        amount: dto.amount,
+        description: dto.description || 'Donasi',
+        payerName: payerName || 'Anonim',
+        productId: null,
+        quantity: null,
+        productOption: null,
+      };
+    }
+    if (payerName.length < 2) {
+      throw new BadRequestException('Nama pembayar wajib diisi');
+    }
     if (!dto.productId) {
       if (!dto.amount || !dto.description) {
         throw new BadRequestException(
@@ -100,8 +126,10 @@ export class PaymentService {
         );
       }
       return {
+        kind: PaymentKind.PEMBAYARAN,
         amount: dto.amount,
         description: dto.description,
+        payerName,
         productId: null,
         quantity: null,
         productOption: null,
@@ -129,6 +157,8 @@ export class PaymentService {
       option = dto.productOption;
     }
     return {
+      kind: PaymentKind.MERCHANDISE,
+      payerName,
       amount: product.price * quantity,
       description: `Merchandise: ${product.name}${option ? ` (${option})` : ''} ×${quantity}`,
       productId: product.id,
@@ -194,7 +224,7 @@ export class PaymentService {
           amount: payment.totalAmount,
           date: now,
           type: TransactionType.INCOME,
-          description: `QRIS: ${payment.description} — ${payment.payerName} (kode ${payment.uniqueCode})`,
+          description: `QRIS ${KIND_LABEL[payment.kind]}: ${payment.description} — ${payment.payerName} (kode ${payment.uniqueCode})`,
           createdById: user.id,
         },
       });

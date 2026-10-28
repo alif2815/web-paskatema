@@ -157,4 +157,24 @@ describe('PaymentService', () => {
       });
     });
   });
+
+  it('donasi boleh tanpa nama (Anonim) dan dicatat dengan jenis DONASI', async () => {
+    findMany.mockResolvedValue([]);
+    const result = (await service.create(
+      { kind: 'DONASI', amount: 25000 },
+      null,
+    )) as unknown as Record<string, unknown>;
+    expect(result).toMatchObject({
+      kind: 'DONASI',
+      payerName: 'Anonim',
+      description: 'Donasi',
+      baseAmount: 25000,
+    });
+  });
+
+  it('pembayaran tetap wajib nama', async () => {
+    await expect(
+      service.create({ amount: 25000, description: 'Iuran' }, null),
+    ).rejects.toBeInstanceOf(BadRequestException);
+  });
 });

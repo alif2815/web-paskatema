@@ -148,7 +148,7 @@ Prinsip: anggota mendaftar sendiri, admin cukup memverifikasi.
 * **Lupa password:** `/lupa-password` mengirim link ke email yang tercatat (berlaku 1 jam, sekali pakai). Setelah password direset/diganti, semua login lama keluar. Butuh SMTP di `.env` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `APP_URL`).
 * **Ganti email & password:** di `/akun` (ganti email wajib password saat ini); pengingat untuk akun berEmail sekolah.
 * **Akun ganda:** 1 email = 1 akun; pengajuan verifikasi dengan nama mirip/no. HP sama ditandai untuk admin.
-* **Pembayaran QRIS + kode unik:** mode Pembayaran di `/qris` menambahkan kode unik Rp 1–999 ke nominal (berlaku 24 jam) supaya bendahara mengenali pembayar; bendahara **Konfirmasi lunas** di Laporan Keuangan → otomatis tercatat sebagai pemasukan.
+* **Pembayaran QRIS + kode unik:** berlaku untuk **Donasi** (nama opsional/Anonim), **Pembayaran**, dan **Merchandise** (berlabel jenis); QR tanpa nominal tetap ada untuk donasi (dicatat manual). Mode Pembayaran di `/qris` menambahkan kode unik Rp 1–999 ke nominal (berlaku 24 jam) supaya bendahara mengenali pembayar; bendahara **Konfirmasi lunas** di Laporan Keuangan → otomatis tercatat sebagai pemasukan.
 * **Keuangan manual & otomatis:** transaksi berlabel *Manual* (dicatat bendahara) atau *Otomatis · QRIS*, dengan filter sumber.
 * **Merchandise (`/merchandise`):** produk (foto, harga, stok, pilihan) dikelola admin/bendahara; pembelian lewat QRIS berkode unik, harga dihitung server, stok berkurang saat konfirmasi lunas.
 

@@ -1,4 +1,4 @@
-import { ApiProperty, ApiPropertyOptional } from '@nestjs/swagger';
+import { ApiPropertyOptional } from '@nestjs/swagger';
 import { PaymentStatus } from '@prisma/client';
 import { Transform, Type } from 'class-transformer';
 import {
@@ -60,12 +60,24 @@ export class CreatePaymentDto {
   @IsOptional()
   productOption?: string;
 
-  @ApiProperty({ example: 'Sari Dewi' })
+  @ApiPropertyOptional({
+    enum: ['PEMBAYARAN', 'DONASI'],
+    description: 'Jenis (merchandise ditentukan dari productId)',
+  })
+  @IsEnum(['PEMBAYARAN', 'DONASI'])
+  @IsOptional()
+  kind?: 'PEMBAYARAN' | 'DONASI';
+
+  @ApiPropertyOptional({
+    example: 'Sari Dewi',
+    description:
+      'Wajib untuk pembayaran & merchandise; donasi boleh kosong (Anonim)',
+  })
   @Transform(trim)
   @IsString()
-  @MinLength(2)
   @MaxLength(100)
-  payerName!: string;
+  @IsOptional()
+  payerName?: string;
 
   @ApiPropertyOptional({ example: '0812xxxx / Angkatan 34' })
   @Transform(trim)
