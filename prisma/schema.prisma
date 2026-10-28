@@ -48,6 +48,8 @@ model User {
   linkedinUrl   String?
   instagram     String?
   profilePublic Boolean  @default(false)
+  // Purna yang bersedia menjadi mentor bagi anggota lain.
+  openToMentor  Boolean  @default(false)
 
   // Pengajuan keanggotaan (anggota aktif / purna yang sudah ada) yang
   // menunggu verifikasi admin. Terisi saat daftar atau diajukan dari /akun;
@@ -72,6 +74,7 @@ model User {
   transactionsRecorded Transaction[]
   forumThreads         ForumThread[]
   forumPosts           ForumPost[]
+  opportunities        Opportunity[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -379,4 +382,32 @@ model AppSetting {
   key       String   @id
   value     Json
   updatedAt DateTime @updatedAt
+}
+
+// ==========================================
+// JARINGAN: PAPAN PELUANG (lowongan/magang/beasiswa dari purna & admin)
+// ==========================================
+enum OpportunityType {
+  LOWONGAN
+  MAGANG
+  BEASISWA
+  LOMBA
+  LAINNYA
+}
+
+model Opportunity {
+  id           String          @id @default(uuid())
+  title        String
+  organization String
+  type         OpportunityType
+  description  String          @db.Text
+  link         String?
+  deadline     DateTime?
+  authorId     String
+  author       User            @relation(fields: [authorId], references: [id], onDelete: Cascade)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  @@index([createdAt])
 }

@@ -51,7 +51,11 @@ export class SettingsService {
             memberStatus: MemberStatus.PURNA,
           },
           // Profil publik hanya untuk Purna.
-          data: { memberStatus: MemberStatus.AKTIF, profilePublic: false },
+          data: {
+            memberStatus: MemberStatus.AKTIF,
+            profilePublic: false,
+            openToMentor: false,
+          },
         }),
         this.prisma.user.updateMany({
           where: {

@@ -51,6 +51,7 @@ const USER_SAFE_SELECT = {
   linkedinUrl: true,
   instagram: true,
   profilePublic: true,
+  openToMentor: true,
   claimStatus: true,
   claimAngkatan: true,
   claimGraduationYear: true,
@@ -214,6 +215,7 @@ export class UserService implements OnApplicationBootstrap {
         linkedinUrl: true,
         instagram: true,
         profilePublic: true,
+        openToMentor: true,
         avatar: { select: { url: true } },
         structures: {
           select: {
@@ -266,6 +268,7 @@ export class UserService implements OnApplicationBootstrap {
       skills: user.skills,
       linkedinUrl: user.linkedinUrl,
       instagram: user.instagram,
+      openToMentor: user.openToMentor,
     };
   }
 
@@ -388,6 +391,7 @@ export class UserService implements OnApplicationBootstrap {
         // Profil publik hanya untuk Purna.
         ...(dto.memberStatus === MemberStatus.AKTIF && {
           profilePublic: false,
+          openToMentor: false,
         }),
       },
     });
@@ -449,13 +453,17 @@ export class UserService implements OnApplicationBootstrap {
 
     // Profil publik hanya untuk Purna (anggota Aktif umumnya masih siswa).
     const status = dto.memberStatus ?? current.memberStatus;
-    if (dto.profilePublic === true && status !== MemberStatus.PURNA) {
+    if (
+      (dto.profilePublic === true || dto.openToMentor === true) &&
+      status !== MemberStatus.PURNA
+    ) {
       throw new BadRequestException(
-        'Profil publik hanya tersedia untuk anggota berstatus Purna',
+        'Profil publik dan mentoring hanya tersedia untuk anggota berstatus Purna',
       );
     }
     if (status !== MemberStatus.PURNA) {
       data.profilePublic = false;
+      data.openToMentor = false;
     }
 
     return this.prisma.user.update({

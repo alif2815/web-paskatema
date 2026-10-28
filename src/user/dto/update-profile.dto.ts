@@ -145,6 +145,15 @@ export class UpdateProfileDto {
   @IsBoolean()
   @IsOptional()
   profilePublic?: boolean;
+
+  @ApiProperty({
+    description:
+      'Bersedia menjadi mentor (hanya untuk anggota berstatus PURNA)',
+    required: false,
+  })
+  @IsBoolean()
+  @IsOptional()
+  openToMentor?: boolean;
 }
 
 /** Ubah status keanggotaan satu angkatan sekaligus (khusus admin). */

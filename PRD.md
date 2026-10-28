@@ -135,3 +135,14 @@ Prinsip: anggota mendaftar sendiri, admin cukup memverifikasi.
 * **Runtime:** Node.js 24 LTS (image Docker `node:24-alpine`, `.nvmrc`, `engines` di `package.json`).
 * **Sesi login:** token 7 hari, tersimpan di browser dan berlaku di semua tab. Halaman login saat sudah masuk menampilkan pilihan lanjut atau ganti akun.
 * **Hapus data struktur:** menghapus periode ikut menghapus penempatan pengurusnya (ditolak bila dipakai pemilihan); menghapus jabatan ditolak selama masih dipakai di Struktur.
+
+---
+
+## 🤝 Jaringan, QRIS & Prestasi
+
+* **Jaringan Paskatema (`/jaringan`, anggota terverifikasi):** cari anggota/purna berdasarkan nama, keahlian, pekerjaan, atau kampus; filter status & *bersedia jadi mentor* (diaktifkan purna di `/akun`). Tab **Peluang**: lowongan, magang, beasiswa, lomba yang dibagikan purna & admin.
+* **Data purna untuk admin:** Struktur & Kepengurusan → Anggota → filter Purna → **Unduh CSV** (kontak, angkatan, pendidikan, pekerjaan, keahlian, tautan).
+* **QRIS (`/qris`):** bendahara/admin mengunggah QRIS statis (dibaca & divalidasi otomatis). Pengunjung memilih Donasi/Pembayaran dan nominal, lalu mendapat **QRIS dinamis** dengan nominal terisi. Konfirmasi pembayaran tidak otomatis (dicek bendahara di aplikasi merchant); konfirmasi otomatis butuh payment gateway.
+* **Prestasi (`/prestasi`):** prestasi dari panel admin, dikelompokkan per tahun.
+* **Navbar:** menu utama + **Lainnya** (Prestasi, Pemilihan, Donasi & Pembayaran, Jaringan, Forum, Administrasi, Developer).
+
