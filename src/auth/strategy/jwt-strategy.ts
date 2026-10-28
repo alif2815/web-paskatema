@@ -8,6 +8,7 @@ import { PrismaService } from '../../prisma/prisma.service';
 /** Struktur payload yang terdapat di dalam JWT token */
 export interface JwtPayload {
   sub: string; // user id
+  iat?: number; // detik sejak epoch, diisi otomatis oleh jsonwebtoken
   email: string;
   role: string;
 }
@@ -43,6 +44,7 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
         bio: true,
         createdAt: true,
         updatedAt: true,
+        passwordChangedAt: true,
       },
     });
 
@@ -52,7 +54,17 @@ export class JwtStrategy extends PassportStrategy(Strategy) {
       );
     }
 
-    return user;
+    // Token yang dibuat sebelum password diganti/direset tidak berlaku lagi.
+    const { passwordChangedAt, ...authUser } = user;
+    if (
+      passwordChangedAt &&
+      payload.iat !== undefined &&
+      payload.iat < Math.floor(passwordChangedAt.getTime() / 1000)
+    ) {
+      throw new UnauthorizedException('Sesi berakhir karena password diganti');
+    }
+
+    return authUser;
   }
 }
 

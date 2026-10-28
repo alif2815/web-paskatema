@@ -15,6 +15,9 @@ import { LoginAuthDto } from './dto/login.dto';
 import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateEmailDto } from './dto/update-email.dto';
 import { SettingsService } from '../settings/settings.service';
+import { createHash, randomBytes } from 'crypto';
+import { MailService } from '../mail/mail.service';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 
 /** Domain email yang wajib digunakan oleh akun ADMIN */
 const ADMIN_EMAIL_DOMAIN = '@paskatema.com';
@@ -25,6 +28,7 @@ export class AuthService {
     private readonly prisma: PrismaService,
     private readonly jwt: JwtService,
     private readonly settings: SettingsService,
+    private readonly mail: MailService,
   ) {}
 
   // =====================
@@ -179,12 +183,16 @@ export class AuthService {
 
     const hashedNewPassword = await bcrypt.hash(dto.newPassword, 10);
 
+    // Login di perangkat lain otomatis keluar; perangkat ini diberi token baru.
     await this.prisma.user.update({
       where: { id: userId },
-      data: { password: hashedNewPassword },
+      data: { password: hashedNewPassword, passwordChangedAt: new Date() },
     });
 
-    return { message: 'Password berhasil diubah' };
+    return {
+      message: 'Password berhasil diubah',
+      access_token: await this.signToken(user.id, user.email, user.role),
+    };
   }
 
   // =====================
@@ -263,4 +271,100 @@ export class AuthService {
 
     return this.jwt.signAsync(payload);
   }
+
+  // =====================
+  // LUPA PASSWORD
+  // =====================
+  private static readonly RESET_TTL_MS = 60 * 60 * 1000; // 1 jam
+
+  private static hashToken(token: string): string {
+    return createHash('sha256').update(token).digest('hex');
+  }
+
+  /**
+   * Kirim link reset ke email yang tercatat. Respons selalu sama, terdaftar
+   * atau tidak, supaya endpoint ini tidak bisa dipakai menebak email anggota.
+   */
+  async forgotPassword(dto: ForgotPasswordDto) {
+    const generic = {
+      message:
+        'Jika email tersebut terdaftar, link untuk mengganti password sudah dikirim. Periksa juga folder Spam.',
+    };
+    const user = await this.prisma.user.findFirst({
+      where: { email: { equals: dto.email, mode: 'insensitive' } },
+      select: { id: true, name: true, email: true },
+    });
+    if (!user) return generic;
+
+    const token = randomBytes(32).toString('hex');
+    await this.prisma.$transaction([
+      // Link lama yang belum dipakai tidak berlaku lagi.
+      this.prisma.passwordResetToken.deleteMany({
+        where: { userId: user.id, usedAt: null },
+      }),
+      this.prisma.passwordResetToken.create({
+        data: {
+          userId: user.id,
+          tokenHash: AuthService.hashToken(token),
+          expiresAt: new Date(Date.now() + AuthService.RESET_TTL_MS),
+        },
+      }),
+    ]);
+
+    const appUrl = (
+      process.env.APP_URL || 'https://paskatema.smktelkom-mlg.sch.id'
+    ).replace(/\/$/, '');
+    const link = `${appUrl}/reset-password?token=${token}`;
+    await this.mail.send(
+      user.email,
+      'Ganti password akun Paskatema',
+      `Halo ${user.name},\n\nKami menerima permintaan untuk mengganti password akun Paskatema Anda. Buka link berikut (berlaku 1 jam, hanya sekali pakai):\n\n${link}\n\nAbaikan email ini bila Anda tidak memintanya; password Anda tidak berubah.\n\nPaskatema SMK Telkom Malang`,
+      `<p>Halo ${escapeHtml(user.name)},</p>
+<p>Kami menerima permintaan untuk mengganti password akun Paskatema Anda.</p>
+<p><a href="${link}" style="display:inline-block;padding:12px 20px;background:#e11d48;color:#fff;border-radius:999px;text-decoration:none;font-weight:600">Ganti password</a></p>
+<p style="color:#64748b;font-size:13px">Link berlaku 1 jam dan hanya bisa dipakai sekali. Abaikan email ini bila Anda tidak memintanya; password Anda tidak berubah.</p>
+<p>Paskatema SMK Telkom Malang</p>`,
+    );
+    return generic;
+  }
+
+  /** Ganti password dengan token dari email; semua login lama ikut keluar. */
+  async resetPassword(dto: ResetPasswordDto) {
+    if (dto.newPassword !== dto.confirmNewPassword) {
+      throw new BadRequestException('Konfirmasi password baru tidak cocok');
+    }
+    const record = await this.prisma.passwordResetToken.findUnique({
+      where: { tokenHash: AuthService.hashToken(dto.token) },
+    });
+    if (!record || record.usedAt || record.expiresAt.getTime() < Date.now()) {
+      throw new BadRequestException(
+        'Link ganti password tidak valid atau sudah kedaluwarsa. Minta link baru.',
+      );
+    }
+    const now = new Date();
+    await this.prisma.$transaction([
+      this.prisma.user.update({
+        where: { id: record.userId },
+        data: {
+          password: await bcrypt.hash(dto.newPassword, 10),
+          passwordChangedAt: now,
+        },
+      }),
+      this.prisma.passwordResetToken.update({
+        where: { id: record.id },
+        data: { usedAt: now },
+      }),
+    ]);
+    return {
+      message: 'Password berhasil diganti. Silakan masuk dengan password baru.',
+    };
+  }
+}
+
+function escapeHtml(text: string): string {
+  return text
+    .replace(/&/g, '&amp;')
+    .replace(/</g, '&lt;')
+    .replace(/>/g, '&gt;')
+    .replace(/"/g, '&quot;');
 }

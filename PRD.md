@@ -145,4 +145,7 @@ Prinsip: anggota mendaftar sendiri, admin cukup memverifikasi.
 * **QRIS (`/qris`):** bendahara/admin mengunggah QRIS statis (dibaca & divalidasi otomatis). Pengunjung memilih Donasi/Pembayaran dan nominal, lalu mendapat **QRIS dinamis** dengan nominal terisi. Konfirmasi pembayaran tidak otomatis (dicek bendahara di aplikasi merchant); konfirmasi otomatis butuh payment gateway.
 * **Prestasi (`/prestasi`):** prestasi dari panel admin, dikelompokkan per tahun.
 * **Navbar:** menu utama + **Lainnya** (Prestasi, Pemilihan, Donasi & Pembayaran, Jaringan, Forum, Administrasi, Developer).
+* **Lupa password:** `/lupa-password` mengirim link ke email yang tercatat (berlaku 1 jam, sekali pakai). Setelah password direset/diganti, semua login lama keluar. Butuh SMTP di `.env` (`SMTP_HOST`, `SMTP_PORT`, `SMTP_USER`, `SMTP_PASS`, `MAIL_FROM`, `APP_URL`).
+* **Ganti email & password:** di `/akun` (ganti email wajib password saat ini); pengingat untuk akun berEmail sekolah.
+* **Akun ganda:** 1 email = 1 akun; pengajuan verifikasi dengan nama mirip/no. HP sama ditandai untuk admin.
 

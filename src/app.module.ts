@@ -30,6 +30,7 @@ import { TransactionModule } from './transaction/transaction.module';
 import { ForumModule } from './forum/forum.module';
 import { SettingsModule } from './settings/settings.module';
 import { NetworkModule } from './network/network.module';
+import { MailModule } from './mail/mail.module';
 
 /**
  * Validasi environment variable wajib saat startup. Gagal cepat (throw)
@@ -108,6 +109,7 @@ function validateEnv(config: Record<string, unknown>) {
     ForumModule,
     SettingsModule,
     NetworkModule,
+    MailModule,
     PrismaModule,
   ],
   controllers: [AppController],

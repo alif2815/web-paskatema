@@ -6,6 +6,7 @@ import { JwtService } from '@nestjs/jwt';
 import { PrismaService } from '../prisma/prisma.service';
 import { SettingsService } from '../settings/settings.service';
 import { AuthService } from './auth.service';
+import { MailService } from '../mail/mail.service';
 
 describe('AuthService.updateEmail', () => {
   const findUnique = jest.fn();
@@ -20,6 +21,7 @@ describe('AuthService.updateEmail', () => {
     prisma,
     {} as JwtService,
     {} as SettingsService,
+    {} as MailService,
   );
 
   beforeEach(async () => {

@@ -27,18 +27,21 @@ enum MemberStatus {
 }
 
 model User {
-  id           String       @id @default(uuid())
-  email        String       @unique
-  password     String
-  name         String
-  role         Role         @default(USER)
-  phone        String?
-  bio          String?      @db.Text
+  id                String       @id @default(uuid())
+  email             String       @unique
+  password          String
+  // Diisi saat password diganti/direset; token login yang dibuat sebelumnya
+  // otomatis tidak berlaku lagi (lihat JwtStrategy).
+  passwordChangedAt DateTime?
+  name              String
+  role              Role         @default(USER)
+  phone             String?
+  bio               String?      @db.Text
   // Nomor angkatan/generasi anggota (mis. 32 = "Angkatan 32"), terpisah
   // dari Period (periode kepengurusan) — berlaku untuk semua anggota,
   // bukan hanya yang menjabat struktur organisasi.
-  angkatan     Int?
-  memberStatus MemberStatus @default(AKTIF)
+  angkatan          Int?
+  memberStatus      MemberStatus @default(AKTIF)
 
   // Profil ala LinkedIn (diisi anggota sendiri). Hanya terlihat oleh sesama
   // anggota, kecuali anggota PURNA memilih profilePublic.
@@ -64,8 +67,8 @@ model User {
   avatar   Media?  @relation("UserAvatar", fields: [avatarId], references: [id], onDelete: SetNull)
 
   // Relasi
-  mediaUploaded        Media[]        @relation("UserUploads")
-  galleryPhotos        GalleryPhoto[] @relation("GalleryUploader")
+  mediaUploaded        Media[]              @relation("UserUploads")
+  galleryPhotos        GalleryPhoto[]       @relation("GalleryUploader")
   structures           Structure[]
   votes                Vote[]
   candidates           Candidate[]
@@ -75,6 +78,7 @@ model User {
   forumThreads         ForumThread[]
   forumPosts           ForumPost[]
   opportunities        Opportunity[]
+  passwordResetTokens  PasswordResetToken[]
 
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
@@ -419,4 +423,20 @@ model Opportunity {
   updatedAt DateTime @updatedAt
 
   @@index([createdAt])
+}
+
+// ==========================================
+// RESET PASSWORD (link dikirim ke email)
+// ==========================================
+// Yang disimpan hanya hash SHA-256 token; token asli hanya ada di email.
+model PasswordResetToken {
+  id        String    @id @default(uuid())
+  tokenHash String    @unique
+  userId    String
+  user      User      @relation(fields: [userId], references: [id], onDelete: Cascade)
+  expiresAt DateTime
+  usedAt    DateTime?
+  createdAt DateTime  @default(now())
+
+  @@index([userId])
 }

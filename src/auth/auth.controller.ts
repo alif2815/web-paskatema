@@ -9,6 +9,7 @@ import { ChangePasswordDto } from './dto/change-password.dto';
 import { UpdateEmailDto } from './dto/update-email.dto';
 import { JwtAuthGuard } from './guards/jwt-auth.guard';
 import { GetUser } from './decorators/get-user.decorators';
+import { ForgotPasswordDto, ResetPasswordDto } from './dto/password-reset.dto';
 
 @ApiTags('Auth')
 @Controller('auth')
@@ -67,5 +68,21 @@ export class AuthController {
   @Patch('update-email')
   updateEmail(@GetUser('id') userId: string, @Body() dto: UpdateEmailDto) {
     return this.authService.updateEmail(userId, dto);
+  }
+
+  // POST /auth/forgot-password
+  @ApiOperation({ summary: 'Kirim link ganti password ke email terdaftar' })
+  @Throttle({ default: { limit: 3, ttl: 60_000 } })
+  @Post('forgot-password')
+  forgotPassword(@Body() dto: ForgotPasswordDto) {
+    return this.authService.forgotPassword(dto);
+  }
+
+  // POST /auth/reset-password
+  @ApiOperation({ summary: 'Ganti password memakai token dari email' })
+  @Throttle({ default: { limit: 5, ttl: 60_000 } })
+  @Post('reset-password')
+  resetPassword(@Body() dto: ResetPasswordDto) {
+    return this.authService.resetPassword(dto);
   }
 }
