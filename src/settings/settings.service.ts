@@ -3,8 +3,18 @@ import { MemberStatus } from '@prisma/client';
 
 import { PrismaService } from '../prisma/prisma.service';
 import { UpdateActiveAngkatanDto } from './dto/active-angkatan.dto';
+import { UpdateQrisDto } from './dto/qris.dto';
+import { validateQris } from './qris';
 
 const ACTIVE_ANGKATAN = 'active_angkatan';
+const QRIS = 'qris';
+
+export interface QrisSetting {
+  /** Payload QRIS statis (EMVCo), sumber QRIS dinamis di frontend. */
+  payload: string;
+  merchantName: string;
+  note: string | null;
+}
 
 @Injectable()
 export class SettingsService {
@@ -61,6 +71,40 @@ export class SettingsService {
         ? `Angkatan aktif disimpan. ${aktif} anggota menjadi Aktif, ${purna} anggota menjadi Purna.`
         : 'Angkatan aktif disimpan.',
     };
+  }
+
+  /** QRIS Paskatema untuk donasi/pembayaran; null bila belum diatur. */
+  async getQris(): Promise<QrisSetting | null> {
+    const row = await this.prisma.appSetting.findUnique({
+      where: { key: QRIS },
+    });
+    const value = row?.value as Partial<QrisSetting> | null | undefined;
+    return value?.payload ? (value as QrisSetting) : null;
+  }
+
+  /** Bendahara/admin mengganti atau menghapus QRIS (payload kosong = hapus). */
+  async updateQris(dto: UpdateQrisDto): Promise<QrisSetting | null> {
+    if (!dto.payload) {
+      await this.prisma.appSetting.deleteMany({ where: { key: QRIS } });
+      return null;
+    }
+    let merchantName: string;
+    try {
+      ({ merchantName } = validateQris(dto.payload));
+    } catch (error) {
+      throw new BadRequestException((error as Error).message);
+    }
+    const value: QrisSetting = {
+      payload: dto.payload,
+      merchantName,
+      note: dto.note || null,
+    };
+    await this.prisma.appSetting.upsert({
+      where: { key: QRIS },
+      update: { value: { ...value } },
+      create: { key: QRIS, value: { ...value } },
+    });
+    return value;
   }
 
   /**
